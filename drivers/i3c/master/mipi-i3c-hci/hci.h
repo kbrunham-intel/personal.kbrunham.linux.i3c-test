@@ -36,14 +36,14 @@ struct hci_cmd_ops;
 /* Our main structure */
 struct i3c_hci {
 	struct i3c_master_controller master;
-	// void __iomem *base_regs;
-	// void __iomem *DAT_regs;
-	// void __iomem *DCT_regs;
-	// void __iomem *RHS_regs;
-	// void __iomem *PIO_regs;
-	// void __iomem *EXTCAPS_regs;
-	// void __iomem *AUTOCMD_regs;
-	// void __iomem *DEBUG_regs;
+	void __iomem *base_regs;
+	void __iomem *DAT_regs;
+	void __iomem *DCT_regs;
+	void __iomem *RHS_regs;
+	void __iomem *PIO_regs;
+	void __iomem *EXTCAPS_regs;
+	void __iomem *AUTOCMD_regs;
+	void __iomem *DEBUG_regs;
 	// const struct hci_io_ops *io;
 	// void *io_data;
 	// const struct hci_cmd_ops *cmd;
