@@ -8,21 +8,25 @@
 #ifndef I3C_MASTER_H
 #define I3C_MASTER_H
 
-#include <asm/bitsperlong.h>
+// #include <asm/bitsperlong.h>
 
-#include <linux/bitops.h>
-#include <linux/i2c.h>
-#include <linux/i3c/ccc.h>
+// #include <linux/bitops.h>
+// #include <linux/i2c.h>
+// #include <linux/i3c/ccc.h>
 #include <linux/i3c/device.h>
-#include <linux/rwsem.h>
-#include <linux/spinlock.h>
-#include <linux/workqueue.h>
+// #include <linux/rwsem.h>
+// #include <linux/spinlock.h>
+// #include <linux/workqueue.h>
+
+#include "mock_types.h"
+#include "mock_device.h"
+#include "mock_bits.h"
 
 #define I3C_HOT_JOIN_ADDR		0x2
 #define I3C_BROADCAST_ADDR		0x7e
 #define I3C_MAX_ADDR			GENMASK(6, 0)
 
-struct i2c_client;
+// struct i2c_client;
 
 struct i3c_master_controller;
 struct i3c_bus;
@@ -51,138 +55,138 @@ struct i3c_i2c_dev_desc {
 
 #define I2C_MAX_ADDR			GENMASK(6, 0)
 
-/**
- * struct i2c_dev_boardinfo - I2C device board information
- * @node: used to insert the boardinfo object in the I2C boardinfo list
- * @base: regular I2C board information
- * @lvr: LVR (Legacy Virtual Register) needed by the I3C core to know about
- *	 the I2C device limitations
- *
- * This structure is used to attach board-level information to an I2C device.
- * Each I2C device connected on the I3C bus should have one.
- */
-struct i2c_dev_boardinfo {
-	struct list_head node;
-	struct i2c_board_info base;
-	u8 lvr;
-};
+// /**
+//  * struct i2c_dev_boardinfo - I2C device board information
+//  * @node: used to insert the boardinfo object in the I2C boardinfo list
+//  * @base: regular I2C board information
+//  * @lvr: LVR (Legacy Virtual Register) needed by the I3C core to know about
+//  *	 the I2C device limitations
+//  *
+//  * This structure is used to attach board-level information to an I2C device.
+//  * Each I2C device connected on the I3C bus should have one.
+//  */
+// struct i2c_dev_boardinfo {
+// 	struct list_head node;
+// 	struct i2c_board_info base;
+// 	u8 lvr;
+// };
 
-/**
- * struct i2c_dev_desc - I2C device descriptor
- * @common: common part of the I2C device descriptor
- * @boardinfo: pointer to the boardinfo attached to this I2C device
- * @dev: I2C device object registered to the I2C framework
- * @addr: I2C device address
- * @lvr: LVR (Legacy Virtual Register) needed by the I3C core to know about
- *	 the I2C device limitations
- *
- * Each I2C device connected on the bus will have an i2c_dev_desc.
- * This object is created by the core and later attached to the controller
- * using &struct_i3c_master_controller->ops->attach_i2c_dev().
- *
- * &struct_i2c_dev_desc is the internal representation of an I2C device
- * connected on an I3C bus. This object is also passed to all
- * &struct_i3c_master_controller_ops hooks.
- */
-struct i2c_dev_desc {
-	struct i3c_i2c_dev_desc common;
-	struct i2c_client *dev;
-	u16 addr;
-	u8 lvr;
-};
+// /**
+//  * struct i2c_dev_desc - I2C device descriptor
+//  * @common: common part of the I2C device descriptor
+//  * @boardinfo: pointer to the boardinfo attached to this I2C device
+//  * @dev: I2C device object registered to the I2C framework
+//  * @addr: I2C device address
+//  * @lvr: LVR (Legacy Virtual Register) needed by the I3C core to know about
+//  *	 the I2C device limitations
+//  *
+//  * Each I2C device connected on the bus will have an i2c_dev_desc.
+//  * This object is created by the core and later attached to the controller
+//  * using &struct_i3c_master_controller->ops->attach_i2c_dev().
+//  *
+//  * &struct_i2c_dev_desc is the internal representation of an I2C device
+//  * connected on an I3C bus. This object is also passed to all
+//  * &struct_i3c_master_controller_ops hooks.
+//  */
+// struct i2c_dev_desc {
+// 	struct i3c_i2c_dev_desc common;
+// 	struct i2c_client *dev;
+// 	u16 addr;
+// 	u8 lvr;
+// };
 
-/**
- * struct i3c_ibi_slot - I3C IBI (In-Band Interrupt) slot
- * @work: work associated to this slot. The IBI handler will be called from
- *	  there
- * @dev: the I3C device that has generated this IBI
- * @len: length of the payload associated to this IBI
- * @data: payload buffer
- *
- * An IBI slot is an object pre-allocated by the controller and used when an
- * IBI comes in.
- * Every time an IBI comes in, the I3C master driver should find a free IBI
- * slot in its IBI slot pool, retrieve the IBI payload and queue the IBI using
- * i3c_master_queue_ibi().
- *
- * How IBI slots are allocated is left to the I3C master driver, though, for
- * simple kmalloc-based allocation, the generic IBI slot pool can be used.
- */
-struct i3c_ibi_slot {
-	struct work_struct work;
-	struct i3c_dev_desc *dev;
-	unsigned int len;
-	void *data;
-};
+// /**
+//  * struct i3c_ibi_slot - I3C IBI (In-Band Interrupt) slot
+//  * @work: work associated to this slot. The IBI handler will be called from
+//  *	  there
+//  * @dev: the I3C device that has generated this IBI
+//  * @len: length of the payload associated to this IBI
+//  * @data: payload buffer
+//  *
+//  * An IBI slot is an object pre-allocated by the controller and used when an
+//  * IBI comes in.
+//  * Every time an IBI comes in, the I3C master driver should find a free IBI
+//  * slot in its IBI slot pool, retrieve the IBI payload and queue the IBI using
+//  * i3c_master_queue_ibi().
+//  *
+//  * How IBI slots are allocated is left to the I3C master driver, though, for
+//  * simple kmalloc-based allocation, the generic IBI slot pool can be used.
+//  */
+// struct i3c_ibi_slot {
+// 	struct work_struct work;
+// 	struct i3c_dev_desc *dev;
+// 	unsigned int len;
+// 	void *data;
+// };
 
-/**
- * struct i3c_device_ibi_info - IBI information attached to a specific device
- * @all_ibis_handled: used to be informed when no more IBIs are waiting to be
- *		      processed. Used by i3c_device_disable_ibi() to wait for
- *		      all IBIs to be dequeued
- * @pending_ibis: count the number of pending IBIs. Each pending IBI has its
- *		  work element queued to the controller workqueue
- * @max_payload_len: maximum payload length for an IBI coming from this device.
- *		     this value is specified when calling
- *		     i3c_device_request_ibi() and should not change at run
- *		     time. All messages IBIs exceeding this limit should be
- *		     rejected by the master
- * @num_slots: number of IBI slots reserved for this device
- * @enabled: reflect the IBI status
- * @handler: IBI handler specified at i3c_device_request_ibi() call time. This
- *	     handler will be called from the controller workqueue, and as such
- *	     is allowed to sleep (though it is recommended to process the IBI
- *	     as fast as possible to not stall processing of other IBIs queued
- *	     on the same workqueue).
- *	     New I3C messages can be sent from the IBI handler
- *
- * The &struct_i3c_device_ibi_info object is allocated when
- * i3c_device_request_ibi() is called and attached to a specific device. This
- * object is here to manage IBIs coming from a specific I3C device.
- *
- * Note that this structure is the generic view of the IBI management
- * infrastructure. I3C master drivers may have their own internal
- * representation which they can associate to the device using
- * controller-private data.
- */
-struct i3c_device_ibi_info {
-	struct completion all_ibis_handled;
-	atomic_t pending_ibis;
-	unsigned int max_payload_len;
-	unsigned int num_slots;
-	unsigned int enabled;
-	void (*handler)(struct i3c_device *dev,
-			const struct i3c_ibi_payload *payload);
-};
+// /**
+//  * struct i3c_device_ibi_info - IBI information attached to a specific device
+//  * @all_ibis_handled: used to be informed when no more IBIs are waiting to be
+//  *		      processed. Used by i3c_device_disable_ibi() to wait for
+//  *		      all IBIs to be dequeued
+//  * @pending_ibis: count the number of pending IBIs. Each pending IBI has its
+//  *		  work element queued to the controller workqueue
+//  * @max_payload_len: maximum payload length for an IBI coming from this device.
+//  *		     this value is specified when calling
+//  *		     i3c_device_request_ibi() and should not change at run
+//  *		     time. All messages IBIs exceeding this limit should be
+//  *		     rejected by the master
+//  * @num_slots: number of IBI slots reserved for this device
+//  * @enabled: reflect the IBI status
+//  * @handler: IBI handler specified at i3c_device_request_ibi() call time. This
+//  *	     handler will be called from the controller workqueue, and as such
+//  *	     is allowed to sleep (though it is recommended to process the IBI
+//  *	     as fast as possible to not stall processing of other IBIs queued
+//  *	     on the same workqueue).
+//  *	     New I3C messages can be sent from the IBI handler
+//  *
+//  * The &struct_i3c_device_ibi_info object is allocated when
+//  * i3c_device_request_ibi() is called and attached to a specific device. This
+//  * object is here to manage IBIs coming from a specific I3C device.
+//  *
+//  * Note that this structure is the generic view of the IBI management
+//  * infrastructure. I3C master drivers may have their own internal
+//  * representation which they can associate to the device using
+//  * controller-private data.
+//  */
+// struct i3c_device_ibi_info {
+// 	struct completion all_ibis_handled;
+// 	atomic_t pending_ibis;
+// 	unsigned int max_payload_len;
+// 	unsigned int num_slots;
+// 	unsigned int enabled;
+// 	void (*handler)(struct i3c_device *dev,
+// 			const struct i3c_ibi_payload *payload);
+// };
 
-/**
- * struct i3c_dev_boardinfo - I3C device board information
- * @node: used to insert the boardinfo object in the I3C boardinfo list
- * @init_dyn_addr: initial dynamic address requested by the FW. We provide no
- *		   guarantee that the device will end up using this address,
- *		   but try our best to assign this specific address to the
- *		   device
- * @static_addr: static address the I3C device listen on before it's been
- *		 assigned a dynamic address by the master. Will be used during
- *		 bus initialization to assign it a specific dynamic address
- *		 before starting DAA (Dynamic Address Assignment)
- * @pid: I3C Provisional ID exposed by the device. This is a unique identifier
- *	 that may be used to attach boardinfo to i3c_dev_desc when the device
- *	 does not have a static address
- * @of_node: optional DT node in case the device has been described in the DT
- *
- * This structure is used to attach board-level information to an I3C device.
- * Not all I3C devices connected on the bus will have a boardinfo. It's only
- * needed if you want to attach extra resources to a device or assign it a
- * specific dynamic address.
- */
-struct i3c_dev_boardinfo {
-	struct list_head node;
-	u8 init_dyn_addr;
-	u8 static_addr;
-	u64 pid;
-	struct device_node *of_node;
-};
+// /**
+//  * struct i3c_dev_boardinfo - I3C device board information
+//  * @node: used to insert the boardinfo object in the I3C boardinfo list
+//  * @init_dyn_addr: initial dynamic address requested by the FW. We provide no
+//  *		   guarantee that the device will end up using this address,
+//  *		   but try our best to assign this specific address to the
+//  *		   device
+//  * @static_addr: static address the I3C device listen on before it's been
+//  *		 assigned a dynamic address by the master. Will be used during
+//  *		 bus initialization to assign it a specific dynamic address
+//  *		 before starting DAA (Dynamic Address Assignment)
+//  * @pid: I3C Provisional ID exposed by the device. This is a unique identifier
+//  *	 that may be used to attach boardinfo to i3c_dev_desc when the device
+//  *	 does not have a static address
+//  * @of_node: optional DT node in case the device has been described in the DT
+//  *
+//  * This structure is used to attach board-level information to an I3C device.
+//  * Not all I3C devices connected on the bus will have a boardinfo. It's only
+//  * needed if you want to attach extra resources to a device or assign it a
+//  * specific dynamic address.
+//  */
+// struct i3c_dev_boardinfo {
+// 	struct list_head node;
+// 	u8 init_dyn_addr;
+// 	u8 static_addr;
+// 	u64 pid;
+// 	struct device_node *of_node;
+// };
 
 /**
  * struct i3c_dev_desc - I3C device descriptor
@@ -207,7 +211,7 @@ struct i3c_dev_boardinfo {
 struct i3c_dev_desc {
 	struct i3c_i2c_dev_desc common;
 	struct i3c_device_info info;
-	struct mutex ibi_lock;
+	// struct mutex ibi_lock;
 	struct i3c_device_ibi_info *ibi;
 	struct i3c_device *dev;
 	const struct i3c_dev_boardinfo *boardinfo;
@@ -342,7 +346,7 @@ struct i3c_bus {
 		struct list_head i3c;
 		struct list_head i2c;
 	} devs;
-	struct rw_semaphore lock;
+	//struct rw_semaphore lock;
 };
 
 /**
@@ -429,29 +433,29 @@ struct i3c_bus {
  */
 struct i3c_master_controller_ops {
 	int (*bus_init)(struct i3c_master_controller *master);
-	void (*bus_cleanup)(struct i3c_master_controller *master);
-	int (*attach_i3c_dev)(struct i3c_dev_desc *dev);
-	int (*reattach_i3c_dev)(struct i3c_dev_desc *dev, u8 old_dyn_addr);
-	void (*detach_i3c_dev)(struct i3c_dev_desc *dev);
-	int (*do_daa)(struct i3c_master_controller *master);
-	bool (*supports_ccc_cmd)(struct i3c_master_controller *master,
-				 const struct i3c_ccc_cmd *cmd);
-	int (*send_ccc_cmd)(struct i3c_master_controller *master,
-			    struct i3c_ccc_cmd *cmd);
-	int (*priv_xfers)(struct i3c_dev_desc *dev,
-			  struct i3c_priv_xfer *xfers,
-			  int nxfers);
-	int (*attach_i2c_dev)(struct i2c_dev_desc *dev);
-	void (*detach_i2c_dev)(struct i2c_dev_desc *dev);
-	int (*i2c_xfers)(struct i2c_dev_desc *dev,
-			 const struct i2c_msg *xfers, int nxfers);
-	int (*request_ibi)(struct i3c_dev_desc *dev,
-			   const struct i3c_ibi_setup *req);
-	void (*free_ibi)(struct i3c_dev_desc *dev);
-	int (*enable_ibi)(struct i3c_dev_desc *dev);
-	int (*disable_ibi)(struct i3c_dev_desc *dev);
-	void (*recycle_ibi_slot)(struct i3c_dev_desc *dev,
-				 struct i3c_ibi_slot *slot);
+	// void (*bus_cleanup)(struct i3c_master_controller *master);
+	// int (*attach_i3c_dev)(struct i3c_dev_desc *dev);
+	// int (*reattach_i3c_dev)(struct i3c_dev_desc *dev, u8 old_dyn_addr);
+	// void (*detach_i3c_dev)(struct i3c_dev_desc *dev);
+	// int (*do_daa)(struct i3c_master_controller *master);
+	// bool (*supports_ccc_cmd)(struct i3c_master_controller *master,
+	// 			 const struct i3c_ccc_cmd *cmd);
+	// int (*send_ccc_cmd)(struct i3c_master_controller *master,
+	// 		    struct i3c_ccc_cmd *cmd);
+	// int (*priv_xfers)(struct i3c_dev_desc *dev,
+	// 		  struct i3c_priv_xfer *xfers,
+	// 		  int nxfers);
+	// int (*attach_i2c_dev)(struct i2c_dev_desc *dev);
+	// void (*detach_i2c_dev)(struct i2c_dev_desc *dev);
+	// int (*i2c_xfers)(struct i2c_dev_desc *dev,
+	// 		 const struct i2c_msg *xfers, int nxfers);
+	// int (*request_ibi)(struct i3c_dev_desc *dev,
+	// 		   const struct i3c_ibi_setup *req);
+	// void (*free_ibi)(struct i3c_dev_desc *dev);
+	// int (*enable_ibi)(struct i3c_dev_desc *dev);
+	// int (*disable_ibi)(struct i3c_dev_desc *dev);
+	// void (*recycle_ibi_slot)(struct i3c_dev_desc *dev,
+	// 			 struct i3c_ibi_slot *slot);
 };
 
 /**
@@ -480,10 +484,11 @@ struct i3c_master_controller_ops {
  * should be set manually, just pass appropriate values to
  * i3c_master_register().
  */
+
 struct i3c_master_controller {
 	struct device dev;
-	struct i3c_dev_desc *this;
-	struct i2c_adapter i2c;
+	struct i3c_dev_desc *this_dev;
+//	struct i2c_adapter i2c;
 	const struct i3c_master_controller_ops *ops;
 	unsigned int secondary : 1;
 	unsigned int init_done : 1;
@@ -495,161 +500,163 @@ struct i3c_master_controller {
 	struct workqueue_struct *wq;
 };
 
-/**
- * i3c_bus_for_each_i2cdev() - iterate over all I2C devices present on the bus
- * @bus: the I3C bus
- * @dev: an I2C device descriptor pointer updated to point to the current slot
- *	 at each iteration of the loop
- *
- * Iterate over all I2C devs present on the bus.
- */
-#define i3c_bus_for_each_i2cdev(bus, dev)				\
-	list_for_each_entry(dev, &(bus)->devs.i2c, common.node)
+// /**
+//  * i3c_bus_for_each_i2cdev() - iterate over all I2C devices present on the bus
+//  * @bus: the I3C bus
+//  * @dev: an I2C device descriptor pointer updated to point to the current slot
+//  *	 at each iteration of the loop
+//  *
+//  * Iterate over all I2C devs present on the bus.
+//  */
+// #define i3c_bus_for_each_i2cdev(bus, dev)				\
+// 	list_for_each_entry(dev, &(bus)->devs.i2c, common.node)
 
-/**
- * i3c_bus_for_each_i3cdev() - iterate over all I3C devices present on the bus
- * @bus: the I3C bus
- * @dev: and I3C device descriptor pointer updated to point to the current slot
- *	 at each iteration of the loop
- *
- * Iterate over all I3C devs present on the bus.
- */
-#define i3c_bus_for_each_i3cdev(bus, dev)				\
-	list_for_each_entry(dev, &(bus)->devs.i3c, common.node)
+// /**
+//  * i3c_bus_for_each_i3cdev() - iterate over all I3C devices present on the bus
+//  * @bus: the I3C bus
+//  * @dev: and I3C device descriptor pointer updated to point to the current slot
+//  *	 at each iteration of the loop
+//  *
+//  * Iterate over all I3C devs present on the bus.
+//  */
+// #define i3c_bus_for_each_i3cdev(bus, dev)				\
+// 	list_for_each_entry(dev, &(bus)->devs.i3c, common.node)
 
-int i3c_master_do_i2c_xfers(struct i3c_master_controller *master,
-			    const struct i2c_msg *xfers,
-			    int nxfers);
+// int i3c_master_do_i2c_xfers(struct i3c_master_controller *master,
+// 			    const struct i2c_msg *xfers,
+// 			    int nxfers);
 
-int i3c_master_disec_locked(struct i3c_master_controller *master, u8 addr,
-			    u8 evts);
-int i3c_master_enec_locked(struct i3c_master_controller *master, u8 addr,
-			   u8 evts);
-int i3c_master_entdaa_locked(struct i3c_master_controller *master);
-int i3c_master_defslvs_locked(struct i3c_master_controller *master);
+// int i3c_master_disec_locked(struct i3c_master_controller *master, u8 addr,
+// 			    u8 evts);
+// int i3c_master_enec_locked(struct i3c_master_controller *master, u8 addr,
+// 			   u8 evts);
+// int i3c_master_entdaa_locked(struct i3c_master_controller *master);
+// int i3c_master_defslvs_locked(struct i3c_master_controller *master);
 
-int i3c_master_get_free_addr(struct i3c_master_controller *master,
-			     u8 start_addr);
+// int i3c_master_get_free_addr(struct i3c_master_controller *master,
+// 			     u8 start_addr);
 
-int i3c_master_add_i3c_dev_locked(struct i3c_master_controller *master,
-				  u8 addr);
-int i3c_master_do_daa(struct i3c_master_controller *master);
+// int i3c_master_add_i3c_dev_locked(struct i3c_master_controller *master,
+// 				  u8 addr);
+// int i3c_master_do_daa(struct i3c_master_controller *master);
 
-int i3c_master_set_info(struct i3c_master_controller *master,
-			const struct i3c_device_info *info);
+// int i3c_master_set_info(struct i3c_master_controller *master,
+// 			const struct i3c_device_info *info);
 
 int i3c_master_register(struct i3c_master_controller *master,
 			struct device *parent,
 			const struct i3c_master_controller_ops *ops,
 			bool secondary);
-void i3c_master_unregister(struct i3c_master_controller *master);
+// void i3c_master_unregister(struct i3c_master_controller *master);
 
-/**
- * i3c_dev_get_master_data() - get master private data attached to an I3C
- *			       device descriptor
- * @dev: the I3C device descriptor to get private data from
- *
- * Return: the private data previously attached with i3c_dev_set_master_data()
- *	   or NULL if no data has been attached to the device.
- */
-static inline void *i3c_dev_get_master_data(const struct i3c_dev_desc *dev)
-{
-	return dev->common.master_priv;
-}
+// /**
+//  * i3c_dev_get_master_data() - get master private data attached to an I3C
+//  *			       device descriptor
+//  * @dev: the I3C device descriptor to get private data from
+//  *
+//  * Return: the private data previously attached with i3c_dev_set_master_data()
+//  *	   or NULL if no data has been attached to the device.
+//  */
+// static inline void *i3c_dev_get_master_data(const struct i3c_dev_desc *dev)
+// {
+// 	return dev->common.master_priv;
+// }
 
-/**
- * i3c_dev_set_master_data() - attach master private data to an I3C device
- *			       descriptor
- * @dev: the I3C device descriptor to attach private data to
- * @data: private data
- *
- * This functions allows a master controller to attach per-device private data
- * which can then be retrieved with i3c_dev_get_master_data().
- */
-static inline void i3c_dev_set_master_data(struct i3c_dev_desc *dev,
-					   void *data)
-{
-	dev->common.master_priv = data;
-}
+// /**
+//  * i3c_dev_set_master_data() - attach master private data to an I3C device
+//  *			       descriptor
+//  * @dev: the I3C device descriptor to attach private data to
+//  * @data: private data
+//  *
+//  * This functions allows a master controller to attach per-device private data
+//  * which can then be retrieved with i3c_dev_get_master_data().
+//  */
+// static inline void i3c_dev_set_master_data(struct i3c_dev_desc *dev,
+// 					   void *data)
+// {
+// 	dev->common.master_priv = data;
+// }
 
-/**
- * i2c_dev_get_master_data() - get master private data attached to an I2C
- *			       device descriptor
- * @dev: the I2C device descriptor to get private data from
- *
- * Return: the private data previously attached with i2c_dev_set_master_data()
- *	   or NULL if no data has been attached to the device.
- */
-static inline void *i2c_dev_get_master_data(const struct i2c_dev_desc *dev)
-{
-	return dev->common.master_priv;
-}
+// /**
+//  * i2c_dev_get_master_data() - get master private data attached to an I2C
+//  *			       device descriptor
+//  * @dev: the I2C device descriptor to get private data from
+//  *
+//  * Return: the private data previously attached with i2c_dev_set_master_data()
+//  *	   or NULL if no data has been attached to the device.
+//  */
+// static inline void *i2c_dev_get_master_data(const struct i2c_dev_desc *dev)
+// {
+// 	return dev->common.master_priv;
+// }
 
-/**
- * i2c_dev_set_master_data() - attach master private data to an I2C device
- *			       descriptor
- * @dev: the I2C device descriptor to attach private data to
- * @data: private data
- *
- * This functions allows a master controller to attach per-device private data
- * which can then be retrieved with i2c_device_get_master_data().
- */
-static inline void i2c_dev_set_master_data(struct i2c_dev_desc *dev,
-					   void *data)
-{
-	dev->common.master_priv = data;
-}
+// /**
+//  * i2c_dev_set_master_data() - attach master private data to an I2C device
+//  *			       descriptor
+//  * @dev: the I2C device descriptor to attach private data to
+//  * @data: private data
+//  *
+//  * This functions allows a master controller to attach per-device private data
+//  * which can then be retrieved with i2c_device_get_master_data().
+//  */
+// static inline void i2c_dev_set_master_data(struct i2c_dev_desc *dev,
+// 					   void *data)
+// {
+// 	dev->common.master_priv = data;
+// }
 
-/**
- * i3c_dev_get_master() - get master used to communicate with a device
- * @dev: I3C dev
- *
- * Return: the master controller driving @dev
- */
-static inline struct i3c_master_controller *
-i3c_dev_get_master(struct i3c_dev_desc *dev)
-{
-	return dev->common.master;
-}
+// /**
+//  * i3c_dev_get_master() - get master used to communicate with a device
+//  * @dev: I3C dev
+//  *
+//  * Return: the master controller driving @dev
+//  */
+// static inline struct i3c_master_controller *
+// i3c_dev_get_master(struct i3c_dev_desc *dev)
+// {
+// 	return dev->common.master;
+// }
 
-/**
- * i2c_dev_get_master() - get master used to communicate with a device
- * @dev: I2C dev
- *
- * Return: the master controller driving @dev
- */
-static inline struct i3c_master_controller *
-i2c_dev_get_master(struct i2c_dev_desc *dev)
-{
-	return dev->common.master;
-}
+// /**
+//  * i2c_dev_get_master() - get master used to communicate with a device
+//  * @dev: I2C dev
+//  *
+//  * Return: the master controller driving @dev
+//  */
+// static inline struct i3c_master_controller *
+// i2c_dev_get_master(struct i2c_dev_desc *dev)
+// {
+// 	return dev->common.master;
+// }
 
-/**
- * i3c_master_get_bus() - get the bus attached to a master
- * @master: master object
- *
- * Return: the I3C bus @master is connected to
- */
-static inline struct i3c_bus *
-i3c_master_get_bus(struct i3c_master_controller *master)
-{
-	return &master->bus;
-}
+// /**
+//  * i3c_master_get_bus() - get the bus attached to a master
+//  * @master: master object
+//  *
+//  * Return: the I3C bus @master is connected to
+//  */
+// static inline struct i3c_bus *
+// i3c_master_get_bus(struct i3c_master_controller *master)
+// {
+// 	return &master->bus;
+// }
 
-struct i3c_generic_ibi_pool;
+// struct i3c_generic_ibi_pool;
 
-struct i3c_generic_ibi_pool *
-i3c_generic_ibi_alloc_pool(struct i3c_dev_desc *dev,
-			   const struct i3c_ibi_setup *req);
-void i3c_generic_ibi_free_pool(struct i3c_generic_ibi_pool *pool);
+// struct i3c_generic_ibi_pool *
+// i3c_generic_ibi_alloc_pool(struct i3c_dev_desc *dev,
+// 			   const struct i3c_ibi_setup *req);
+// void i3c_generic_ibi_free_pool(struct i3c_generic_ibi_pool *pool);
 
-struct i3c_ibi_slot *
-i3c_generic_ibi_get_free_slot(struct i3c_generic_ibi_pool *pool);
-void i3c_generic_ibi_recycle_slot(struct i3c_generic_ibi_pool *pool,
-				  struct i3c_ibi_slot *slot);
+// struct i3c_ibi_slot *
+// i3c_generic_ibi_get_free_slot(struct i3c_generic_ibi_pool *pool);
+// void i3c_generic_ibi_recycle_slot(struct i3c_generic_ibi_pool *pool,
+// 				  struct i3c_ibi_slot *slot);
 
-void i3c_master_queue_ibi(struct i3c_dev_desc *dev, struct i3c_ibi_slot *slot);
+// void i3c_master_queue_ibi(struct i3c_dev_desc *dev, struct i3c_ibi_slot *slot);
 
-struct i3c_ibi_slot *i3c_master_get_free_ibi_slot(struct i3c_dev_desc *dev);
+// struct i3c_ibi_slot *i3c_master_get_free_ibi_slot(struct i3c_dev_desc *dev);
+
+int do_i3c_master_rstdaa_locked(struct i3c_master_controller *master, u8 addr);
 
 #endif /* I3C_MASTER_H */

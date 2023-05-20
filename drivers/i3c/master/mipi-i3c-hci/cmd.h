@@ -55,8 +55,8 @@ struct hci_cmd_ops {
 			u8 ccc_addr, u8 ccc_cmd, bool raw);
 	void (*prep_i3c_xfer)(struct i3c_hci *hci, struct i3c_dev_desc *dev,
 			      struct hci_xfer *xfer);
-	void (*prep_i2c_xfer)(struct i3c_hci *hci, struct i2c_dev_desc *dev,
-			      struct hci_xfer *xfer);
+	// void (*prep_i2c_xfer)(struct i3c_hci *hci, struct i2c_dev_desc *dev,
+	// 		      struct hci_xfer *xfer);
 	int (*perform_daa)(struct i3c_hci *hci);
 };
 

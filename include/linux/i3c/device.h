@@ -8,12 +8,14 @@
 #ifndef I3C_DEV_H
 #define I3C_DEV_H
 
-#include <linux/bitops.h>
-#include <linux/device.h>
-#include <linux/i2c.h>
-#include <linux/kconfig.h>
-#include <linux/mod_devicetable.h>
-#include <linux/module.h>
+// #include <linux/bitops.h>
+// #include <linux/device.h>
+// #include <linux/i2c.h>
+// #include <linux/kconfig.h>
+// #include <linux/mod_devicetable.h>
+// #include <linux/module.h>
+
+#include "mock_types.h"
 
 /**
  * enum i3c_error_code - I3C error codes
@@ -139,208 +141,208 @@ struct i3c_device_info {
  */
 struct i3c_device;
 
-/* These macros should be used to i3c_device_id entries. */
-#define I3C_MATCH_MANUF_AND_PART (I3C_MATCH_MANUF | I3C_MATCH_PART)
+// /* These macros should be used to i3c_device_id entries. */
+// #define I3C_MATCH_MANUF_AND_PART (I3C_MATCH_MANUF | I3C_MATCH_PART)
 
-#define I3C_DEVICE(_manufid, _partid, _drvdata)				\
-	{								\
-		.match_flags = I3C_MATCH_MANUF_AND_PART,		\
-		.manuf_id = _manufid,					\
-		.part_id = _partid,					\
-		.data = _drvdata,					\
-	}
+// #define I3C_DEVICE(_manufid, _partid, _drvdata)				\
+// 	{								\
+// 		.match_flags = I3C_MATCH_MANUF_AND_PART,		\
+// 		.manuf_id = _manufid,					\
+// 		.part_id = _partid,					\
+// 		.data = _drvdata,					\
+// 	}
 
-#define I3C_DEVICE_EXTRA_INFO(_manufid, _partid, _info, _drvdata)	\
-	{								\
-		.match_flags = I3C_MATCH_MANUF_AND_PART |		\
-			       I3C_MATCH_EXTRA_INFO,			\
-		.manuf_id = _manufid,					\
-		.part_id = _partid,					\
-		.extra_info = _info,					\
-		.data = _drvdata,					\
-	}
+// #define I3C_DEVICE_EXTRA_INFO(_manufid, _partid, _info, _drvdata)	\
+// 	{								\
+// 		.match_flags = I3C_MATCH_MANUF_AND_PART |		\
+// 			       I3C_MATCH_EXTRA_INFO,			\
+// 		.manuf_id = _manufid,					\
+// 		.part_id = _partid,					\
+// 		.extra_info = _info,					\
+// 		.data = _drvdata,					\
+// 	}
 
-#define I3C_CLASS(_dcr, _drvdata)					\
-	{								\
-		.match_flags = I3C_MATCH_DCR,				\
-		.dcr = _dcr,						\
-	}
+// #define I3C_CLASS(_dcr, _drvdata)					\
+// 	{								\
+// 		.match_flags = I3C_MATCH_DCR,				\
+// 		.dcr = _dcr,						\
+// 	}
 
-/**
- * struct i3c_driver - I3C device driver
- * @driver: inherit from device_driver
- * @probe: I3C device probe method
- * @remove: I3C device remove method
- * @id_table: I3C device match table. Will be used by the framework to decide
- *	      which device to bind to this driver
- */
-struct i3c_driver {
-	struct device_driver driver;
-	int (*probe)(struct i3c_device *dev);
-	void (*remove)(struct i3c_device *dev);
-	const struct i3c_device_id *id_table;
-};
+// /**
+//  * struct i3c_driver - I3C device driver
+//  * @driver: inherit from device_driver
+//  * @probe: I3C device probe method
+//  * @remove: I3C device remove method
+//  * @id_table: I3C device match table. Will be used by the framework to decide
+//  *	      which device to bind to this driver
+//  */
+// struct i3c_driver {
+// 	struct device_driver driver;
+// 	int (*probe)(struct i3c_device *dev);
+// 	void (*remove)(struct i3c_device *dev);
+// 	const struct i3c_device_id *id_table;
+// };
 
-static inline struct i3c_driver *drv_to_i3cdrv(struct device_driver *drv)
-{
-	return container_of(drv, struct i3c_driver, driver);
-}
+// static inline struct i3c_driver *drv_to_i3cdrv(struct device_driver *drv)
+// {
+// 	return container_of(drv, struct i3c_driver, driver);
+// }
 
-struct device *i3cdev_to_dev(struct i3c_device *i3cdev);
+// struct device *i3cdev_to_dev(struct i3c_device *i3cdev);
 
-/**
- * dev_to_i3cdev() - Returns the I3C device containing @dev
- * @__dev: device object
- *
- * Return: a pointer to an I3C device object.
- */
-#define dev_to_i3cdev(__dev)	container_of_const(__dev, struct i3c_device, dev)
+// /**
+//  * dev_to_i3cdev() - Returns the I3C device containing @dev
+//  * @__dev: device object
+//  *
+//  * Return: a pointer to an I3C device object.
+//  */
+// #define dev_to_i3cdev(__dev)	container_of_const(__dev, struct i3c_device, dev)
 
-const struct i3c_device_id *
-i3c_device_match_id(struct i3c_device *i3cdev,
-		    const struct i3c_device_id *id_table);
+// const struct i3c_device_id *
+// i3c_device_match_id(struct i3c_device *i3cdev,
+// 		    const struct i3c_device_id *id_table);
 
-static inline void i3cdev_set_drvdata(struct i3c_device *i3cdev,
-				      void *data)
-{
-	struct device *dev = i3cdev_to_dev(i3cdev);
+// static inline void i3cdev_set_drvdata(struct i3c_device *i3cdev,
+// 				      void *data)
+// {
+// 	struct device *dev = i3cdev_to_dev(i3cdev);
 
-	dev_set_drvdata(dev, data);
-}
+// 	dev_set_drvdata(dev, data);
+// }
 
-static inline void *i3cdev_get_drvdata(struct i3c_device *i3cdev)
-{
-	struct device *dev = i3cdev_to_dev(i3cdev);
+// static inline void *i3cdev_get_drvdata(struct i3c_device *i3cdev)
+// {
+// 	struct device *dev = i3cdev_to_dev(i3cdev);
 
-	return dev_get_drvdata(dev);
-}
+// 	return dev_get_drvdata(dev);
+// }
 
-int i3c_driver_register_with_owner(struct i3c_driver *drv,
-				   struct module *owner);
-void i3c_driver_unregister(struct i3c_driver *drv);
+// int i3c_driver_register_with_owner(struct i3c_driver *drv,
+// 				   struct module *owner);
+// void i3c_driver_unregister(struct i3c_driver *drv);
 
-#define i3c_driver_register(__drv)		\
-	i3c_driver_register_with_owner(__drv, THIS_MODULE)
+// #define i3c_driver_register(__drv)		\
+// 	i3c_driver_register_with_owner(__drv, THIS_MODULE)
 
-/**
- * module_i3c_driver() - Register a module providing an I3C driver
- * @__drv: the I3C driver to register
- *
- * Provide generic init/exit functions that simply register/unregister an I3C
- * driver.
- * Should be used by any driver that does not require extra init/cleanup steps.
- */
-#define module_i3c_driver(__drv)		\
-	module_driver(__drv, i3c_driver_register, i3c_driver_unregister)
+// /**
+//  * module_i3c_driver() - Register a module providing an I3C driver
+//  * @__drv: the I3C driver to register
+//  *
+//  * Provide generic init/exit functions that simply register/unregister an I3C
+//  * driver.
+//  * Should be used by any driver that does not require extra init/cleanup steps.
+//  */
+// #define module_i3c_driver(__drv)		\
+// 	module_driver(__drv, i3c_driver_register, i3c_driver_unregister)
 
-/**
- * i3c_i2c_driver_register() - Register an i2c and an i3c driver
- * @i3cdrv: the I3C driver to register
- * @i2cdrv: the I2C driver to register
- *
- * This function registers both @i2cdev and @i3cdev, and fails if one of these
- * registrations fails. This is mainly useful for devices that support both I2C
- * and I3C modes.
- * Note that when CONFIG_I3C is not enabled, this function only registers the
- * I2C driver.
- *
- * Return: 0 if both registrations succeeds, a negative error code otherwise.
- */
-static inline int i3c_i2c_driver_register(struct i3c_driver *i3cdrv,
-					  struct i2c_driver *i2cdrv)
-{
-	int ret;
+// /**
+//  * i3c_i2c_driver_register() - Register an i2c and an i3c driver
+//  * @i3cdrv: the I3C driver to register
+//  * @i2cdrv: the I2C driver to register
+//  *
+//  * This function registers both @i2cdev and @i3cdev, and fails if one of these
+//  * registrations fails. This is mainly useful for devices that support both I2C
+//  * and I3C modes.
+//  * Note that when CONFIG_I3C is not enabled, this function only registers the
+//  * I2C driver.
+//  *
+//  * Return: 0 if both registrations succeeds, a negative error code otherwise.
+//  */
+// static inline int i3c_i2c_driver_register(struct i3c_driver *i3cdrv,
+// 					  struct i2c_driver *i2cdrv)
+// {
+// 	int ret;
 
-	ret = i2c_add_driver(i2cdrv);
-	if (ret || !IS_ENABLED(CONFIG_I3C))
-		return ret;
+// 	ret = i2c_add_driver(i2cdrv);
+// 	if (ret || !IS_ENABLED(CONFIG_I3C))
+// 		return ret;
 
-	ret = i3c_driver_register(i3cdrv);
-	if (ret)
-		i2c_del_driver(i2cdrv);
+// 	ret = i3c_driver_register(i3cdrv);
+// 	if (ret)
+// 		i2c_del_driver(i2cdrv);
 
-	return ret;
-}
+// 	return ret;
+// }
 
-/**
- * i3c_i2c_driver_unregister() - Unregister an i2c and an i3c driver
- * @i3cdrv: the I3C driver to register
- * @i2cdrv: the I2C driver to register
- *
- * This function unregisters both @i3cdrv and @i2cdrv.
- * Note that when CONFIG_I3C is not enabled, this function only unregisters the
- * @i2cdrv.
- */
-static inline void i3c_i2c_driver_unregister(struct i3c_driver *i3cdrv,
-					     struct i2c_driver *i2cdrv)
-{
-	if (IS_ENABLED(CONFIG_I3C))
-		i3c_driver_unregister(i3cdrv);
+// /**
+//  * i3c_i2c_driver_unregister() - Unregister an i2c and an i3c driver
+//  * @i3cdrv: the I3C driver to register
+//  * @i2cdrv: the I2C driver to register
+//  *
+//  * This function unregisters both @i3cdrv and @i2cdrv.
+//  * Note that when CONFIG_I3C is not enabled, this function only unregisters the
+//  * @i2cdrv.
+//  */
+// static inline void i3c_i2c_driver_unregister(struct i3c_driver *i3cdrv,
+// 					     struct i2c_driver *i2cdrv)
+// {
+// 	if (IS_ENABLED(CONFIG_I3C))
+// 		i3c_driver_unregister(i3cdrv);
 
-	i2c_del_driver(i2cdrv);
-}
+// 	i2c_del_driver(i2cdrv);
+// }
 
-/**
- * module_i3c_i2c_driver() - Register a module providing an I3C and an I2C
- *			     driver
- * @__i3cdrv: the I3C driver to register
- * @__i2cdrv: the I3C driver to register
- *
- * Provide generic init/exit functions that simply register/unregister an I3C
- * and an I2C driver.
- * This macro can be used even if CONFIG_I3C is disabled, in this case, only
- * the I2C driver will be registered.
- * Should be used by any driver that does not require extra init/cleanup steps.
- */
-#define module_i3c_i2c_driver(__i3cdrv, __i2cdrv)	\
-	module_driver(__i3cdrv,				\
-		      i3c_i2c_driver_register,		\
-		      i3c_i2c_driver_unregister,	\
-		      __i2cdrv)
+// /**
+//  * module_i3c_i2c_driver() - Register a module providing an I3C and an I2C
+//  *			     driver
+//  * @__i3cdrv: the I3C driver to register
+//  * @__i2cdrv: the I3C driver to register
+//  *
+//  * Provide generic init/exit functions that simply register/unregister an I3C
+//  * and an I2C driver.
+//  * This macro can be used even if CONFIG_I3C is disabled, in this case, only
+//  * the I2C driver will be registered.
+//  * Should be used by any driver that does not require extra init/cleanup steps.
+//  */
+// #define module_i3c_i2c_driver(__i3cdrv, __i2cdrv)	\
+// 	module_driver(__i3cdrv,				\
+// 		      i3c_i2c_driver_register,		\
+// 		      i3c_i2c_driver_unregister,	\
+// 		      __i2cdrv)
 
-int i3c_device_do_priv_xfers(struct i3c_device *dev,
-			     struct i3c_priv_xfer *xfers,
-			     int nxfers);
+// int i3c_device_do_priv_xfers(struct i3c_device *dev,
+// 			     struct i3c_priv_xfer *xfers,
+// 			     int nxfers);
 
-int i3c_device_do_setdasa(struct i3c_device *dev);
+// int i3c_device_do_setdasa(struct i3c_device *dev);
 
-void i3c_device_get_info(const struct i3c_device *dev, struct i3c_device_info *info);
+// void i3c_device_get_info(const struct i3c_device *dev, struct i3c_device_info *info);
 
-struct i3c_ibi_payload {
-	unsigned int len;
-	const void *data;
-};
+// struct i3c_ibi_payload {
+// 	unsigned int len;
+// 	const void *data;
+// };
 
-/**
- * struct i3c_ibi_setup - IBI setup object
- * @max_payload_len: maximum length of the payload associated to an IBI. If one
- *		     IBI appears to have a payload that is bigger than this
- *		     number, the IBI will be rejected.
- * @num_slots: number of pre-allocated IBI slots. This should be chosen so that
- *	       the system never runs out of IBI slots, otherwise you'll lose
- *	       IBIs.
- * @handler: IBI handler, every time an IBI is received. This handler is called
- *	     in a workqueue context. It is allowed to sleep and send new
- *	     messages on the bus, though it's recommended to keep the
- *	     processing done there as fast as possible to avoid delaying
- *	     processing of other queued on the same workqueue.
- *
- * Temporary structure used to pass information to i3c_device_request_ibi().
- * This object can be allocated on the stack since i3c_device_request_ibi()
- * copies every bit of information and do not use it after
- * i3c_device_request_ibi() has returned.
- */
-struct i3c_ibi_setup {
-	unsigned int max_payload_len;
-	unsigned int num_slots;
-	void (*handler)(struct i3c_device *dev,
-			const struct i3c_ibi_payload *payload);
-};
+// /**
+//  * struct i3c_ibi_setup - IBI setup object
+//  * @max_payload_len: maximum length of the payload associated to an IBI. If one
+//  *		     IBI appears to have a payload that is bigger than this
+//  *		     number, the IBI will be rejected.
+//  * @num_slots: number of pre-allocated IBI slots. This should be chosen so that
+//  *	       the system never runs out of IBI slots, otherwise you'll lose
+//  *	       IBIs.
+//  * @handler: IBI handler, every time an IBI is received. This handler is called
+//  *	     in a workqueue context. It is allowed to sleep and send new
+//  *	     messages on the bus, though it's recommended to keep the
+//  *	     processing done there as fast as possible to avoid delaying
+//  *	     processing of other queued on the same workqueue.
+//  *
+//  * Temporary structure used to pass information to i3c_device_request_ibi().
+//  * This object can be allocated on the stack since i3c_device_request_ibi()
+//  * copies every bit of information and do not use it after
+//  * i3c_device_request_ibi() has returned.
+//  */
+// struct i3c_ibi_setup {
+// 	unsigned int max_payload_len;
+// 	unsigned int num_slots;
+// 	void (*handler)(struct i3c_device *dev,
+// 			const struct i3c_ibi_payload *payload);
+// };
 
-int i3c_device_request_ibi(struct i3c_device *dev,
-			   const struct i3c_ibi_setup *setup);
-void i3c_device_free_ibi(struct i3c_device *dev);
-int i3c_device_enable_ibi(struct i3c_device *dev);
-int i3c_device_disable_ibi(struct i3c_device *dev);
+// int i3c_device_request_ibi(struct i3c_device *dev,
+// 			   const struct i3c_ibi_setup *setup);
+// void i3c_device_free_ibi(struct i3c_device *dev);
+// int i3c_device_enable_ibi(struct i3c_device *dev);
+// int i3c_device_disable_ibi(struct i3c_device *dev);
 
 #endif /* I3C_DEV_H */

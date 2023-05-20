@@ -10,9 +10,13 @@
 #ifndef HCI_H
 #define HCI_H
 
+#include <stdlib.h>
+#include <linux/i3c/master.h>
+#include "mock_types.h"
 
 /* Handy logging macro to save on line length */
-#define DBG(x, ...) pr_devel("%s: " x "\n", __func__, ##__VA_ARGS__)
+//#define DBG(x, ...) pr_devel("%s: " x "\n", __func__, ##__VA_ARGS__)
+#define DBG(x, ...) printf("dev_dbg: %s() : " x "\n", __FUNCTION__, ##__VA_ARGS__)
 
 /* 32-bit word aware bit and mask macros */
 #define W0_MASK(h, l)  GENMASK((h) - 0,  (l) - 0)
@@ -32,18 +36,18 @@ struct hci_cmd_ops;
 /* Our main structure */
 struct i3c_hci {
 	struct i3c_master_controller master;
-	void __iomem *base_regs;
-	void __iomem *DAT_regs;
-	void __iomem *DCT_regs;
-	void __iomem *RHS_regs;
-	void __iomem *PIO_regs;
-	void __iomem *EXTCAPS_regs;
-	void __iomem *AUTOCMD_regs;
-	void __iomem *DEBUG_regs;
-	const struct hci_io_ops *io;
-	void *io_data;
-	const struct hci_cmd_ops *cmd;
-	atomic_t next_cmd_tid;
+	// void __iomem *base_regs;
+	// void __iomem *DAT_regs;
+	// void __iomem *DCT_regs;
+	// void __iomem *RHS_regs;
+	// void __iomem *PIO_regs;
+	// void __iomem *EXTCAPS_regs;
+	// void __iomem *AUTOCMD_regs;
+	// void __iomem *DEBUG_regs;
+	// const struct hci_io_ops *io;
+	// void *io_data;
+	// const struct hci_cmd_ops *cmd;
+	// atomic_t next_cmd_tid;
 	u32 caps;
 	unsigned int quirks;
 	unsigned int DAT_entries;
@@ -87,23 +91,24 @@ struct hci_xfer {
 			unsigned int data_left;
 			u32 data_word_before_partial;
 		};
-		struct {
-			/* DMA specific */
-			dma_addr_t data_dma;
-			int ring_number;
-			int ring_entry;
-		};
+		// struct {
+		// 	/* DMA specific */
+		// 	dma_addr_t data_dma;
+		// 	int ring_number;
+		// 	int ring_entry;
+		// };
 	};
 };
 
 static inline struct hci_xfer *hci_alloc_xfer(unsigned int n)
 {
-	return kcalloc(n, sizeof(struct hci_xfer), GFP_KERNEL);
+	//return kcalloc(n, sizeof(struct hci_xfer), GFP_KERNEL);
+	return (struct hci_xfer*) malloc(n * sizeof(struct hci_xfer));
 }
 
 static inline void hci_free_xfer(struct hci_xfer *xfer, unsigned int n)
 {
-	kfree(xfer);
+	free(xfer);
 }
 
 
@@ -112,11 +117,11 @@ struct hci_io_ops {
 	bool (*irq_handler)(struct i3c_hci *hci, unsigned int mask);
 	int (*queue_xfer)(struct i3c_hci *hci, struct hci_xfer *xfer, int n);
 	bool (*dequeue_xfer)(struct i3c_hci *hci, struct hci_xfer *xfer, int n);
-	int (*request_ibi)(struct i3c_hci *hci, struct i3c_dev_desc *dev,
-			   const struct i3c_ibi_setup *req);
-	void (*free_ibi)(struct i3c_hci *hci, struct i3c_dev_desc *dev);
-	void (*recycle_ibi_slot)(struct i3c_hci *hci, struct i3c_dev_desc *dev,
-				struct i3c_ibi_slot *slot);
+	// int (*request_ibi)(struct i3c_hci *hci, struct i3c_dev_desc *dev,
+	// 		   const struct i3c_ibi_setup *req);
+	// void (*free_ibi)(struct i3c_hci *hci, struct i3c_dev_desc *dev);
+	// void (*recycle_ibi_slot)(struct i3c_hci *hci, struct i3c_dev_desc *dev,
+	// 			struct i3c_ibi_slot *slot);
 	int (*init)(struct i3c_hci *hci);
 	void (*cleanup)(struct i3c_hci *hci);
 };
