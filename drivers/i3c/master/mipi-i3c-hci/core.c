@@ -591,7 +591,7 @@ static int i3c_hci_init(struct i3c_hci *hci)
 	int ret;
 
 	/* Validate HCI hardware version */
-	regval = reg_read(HCI_VERSION, 0x100);
+	regval = reg_read(HCI_VERSION);
 	dev_dbg(&hci->master.dev, "HCI_VERSION = %#x\n", regval);
 	hci->version_major = (regval >> 8) & 0xf;
 	hci->version_minor = (regval >> 4) & 0xf;
@@ -609,10 +609,10 @@ static int i3c_hci_init(struct i3c_hci *hci)
 		return -EPROTONOSUPPORT;
 	}
 
-	hci->caps = reg_read(HC_CAPABILITIES, I3C_DW_IP_DATA_HC_CAPABILITIES);
+	hci->caps = reg_read(HC_CAPABILITIES);
 	DBG("caps = %#x", hci->caps);
 
-	regval = reg_read(DAT_SECTION, I3C_DW_IP_DATA_DAT_SECTION);
+	regval = reg_read(DAT_SECTION);
 	offset = FIELD_GET(DAT_TABLE_OFFSET, regval);
 	hci->DAT_regs = offset ? hci->base_regs + offset : NULL;
 	hci->DAT_entries = FIELD_GET(DAT_TABLE_SIZE, regval);
@@ -620,7 +620,7 @@ static int i3c_hci_init(struct i3c_hci *hci)
 	dev_info(&hci->master.dev, "DAT: %u %u-bytes entries at offset %#x\n",
 		 hci->DAT_entries, hci->DAT_entry_size * 4, offset);
 
-	regval = reg_read(DCT_SECTION, I3C_DW_IP_DATA_DCT_SECTION);
+	regval = reg_read(DCT_SECTION);
 	offset = FIELD_GET(DCT_TABLE_OFFSET, regval);
 	hci->DCT_regs = offset ? hci->base_regs + offset : NULL;
 	hci->DCT_entries = FIELD_GET(DCT_TABLE_SIZE, regval);
@@ -628,39 +628,41 @@ static int i3c_hci_init(struct i3c_hci *hci)
 	dev_info(&hci->master.dev, "DCT: %u %u-bytes entries at offset %#x\n",
 		 hci->DCT_entries, hci->DCT_entry_size * 4, offset);
 
-	regval = reg_read(RING_HEADERS_SECTION, I3C_DW_IP_DATA_RING_HEADERS);
+	regval = reg_read(RING_HEADERS_SECTION);
 	offset = FIELD_GET(RING_HEADERS_OFFSET, regval);
 	hci->RHS_regs = offset ? hci->base_regs + offset : NULL;
 	dev_info(&hci->master.dev, "Ring Headers at offset %#x\n", offset);
 
-	regval = reg_read(PIO_SECTION, I3C_DW_IP_DATA_PIO_SECTION);
+	regval = reg_read(PIO_SECTION);
 	offset = FIELD_GET(PIO_REGS_OFFSET, regval);
 	hci->PIO_regs = offset ? hci->base_regs + offset : NULL;
 	dev_info(&hci->master.dev, "PIO section at offset %#x\n", offset);
 
-	regval = reg_read(EXT_CAPS_SECTION, I3C_DW_IP_DATA_EXT_CAPS_SECTION);
+	regval = reg_read(EXT_CAPS_SECTION);
 	offset = FIELD_GET(EXT_CAPS_OFFSET, regval);
 	hci->EXTCAPS_regs = offset ? hci->base_regs + offset : NULL;
 	dev_info(&hci->master.dev, "Extended Caps at offset %#x\n", offset);
 
-	// ret = i3c_hci_parse_ext_caps(hci);
-	// if (ret)
-	// 	return ret;
+	dev_info(&hci->master.dev, "Preparing to parse extended capabilities\n");
+	ret = i3c_hci_parse_ext_caps(hci);
+	dev_info(&hci->master.dev, "Done parsing extended capabilities\n");
+	if (ret)
+		return ret;
 
-	// /*
-	//  * Now let's reset the hardware.
-	//  * SOFT_RST must be clear before we write to it.
-	//  * Then we must wait until it clears again.
-	//  */
-	// ret = readx_poll_timeout(reg_read, RESET_CONTROL, regval,
-	// 			 !(regval & SOFT_RST), 1, 10000);
-	// if (ret)
-	// 	return -ENXIO;
-	// reg_write(RESET_CONTROL, SOFT_RST);
-	// ret = readx_poll_timeout(reg_read, RESET_CONTROL, regval,
-	// 			 !(regval & SOFT_RST), 1, 10000);
-	// if (ret)
-	// 	return -ENXIO;
+	/*
+	 * Now let's reset the hardware.
+	 * SOFT_RST must be clear before we write to it.
+	 * Then we must wait until it clears again.
+	 */
+	ret = readx_poll_timeout(reg_read, RESET_CONTROL, regval,
+				 !(regval & SOFT_RST), 1, 10000);
+	if (ret)
+		return -ENXIO;
+	reg_write(RESET_CONTROL, SOFT_RST);
+	ret = readx_poll_timeout(reg_read, RESET_CONTROL, regval,
+				 !(regval & SOFT_RST), 1, 10000);
+	if (ret)
+		return -ENXIO;
 
 	// /* Disable all interrupts and allow all signal updates */
 	// reg_write(INTR_SIGNAL_ENABLE, 0x0);

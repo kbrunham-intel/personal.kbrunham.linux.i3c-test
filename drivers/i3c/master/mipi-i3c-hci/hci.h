@@ -11,6 +11,7 @@
 #define HCI_H
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <linux/i3c/master.h>
 #include "mock_types.h"
 
