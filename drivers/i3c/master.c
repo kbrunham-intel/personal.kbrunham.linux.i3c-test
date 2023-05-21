@@ -9,12 +9,12 @@
 
 // #include <linux/atomic.h>
 // #include <linux/bug.h>
-// #include <linux/device.h>
+#include <linux/device.h>
 // #include <linux/err.h>
 // #include <linux/export.h>
 // #include <linux/kernel.h>
 #include <linux/list.h>
-// #include <linux/of.h>
+#include <linux/of.h>
 // #include <linux/slab.h>
 // #include <linux/spinlock.h>
 // #include <linux/workqueue.h>
