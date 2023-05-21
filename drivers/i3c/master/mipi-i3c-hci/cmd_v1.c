@@ -7,7 +7,9 @@
  * I3C HCI v1.0/v1.1 Command Descriptor Handling
  */
 
-// #include <linux/bitfield.h>
+#include "mock_linux_overrides.h"
+
+//#include <linux/bitfield.h>
 #include <linux/i3c/master.h>
 
 #include "hci.h"

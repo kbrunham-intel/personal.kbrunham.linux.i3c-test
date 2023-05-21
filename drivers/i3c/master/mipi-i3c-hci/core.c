@@ -7,6 +7,8 @@
  * Core driver code with main interface to the I3C subsystem.
  */
 
+#include "mock_linux_overrides.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 

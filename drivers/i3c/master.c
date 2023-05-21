@@ -5,6 +5,8 @@
  * Author: Boris Brezillon <boris.brezillon@bootlin.com>
  */
 
+#include "mock_linux_overrides.h"
+
 // #include <linux/atomic.h>
 // #include <linux/bug.h>
 // #include <linux/device.h>
@@ -17,15 +19,21 @@
 // #include <linux/spinlock.h>
 // #include <linux/workqueue.h>
 
+#include <linux/errno.h>
+//#include <linux/idr.h>
+
 #include "internals.h"
 #include <linux/i3c/ccc.h>
 
 #include <linux/errno.h>
 #include "mock_types.h"
+#include "mock_bits.h"
+#include "mock_i3c.h"
+#include "mock_list.h"
 
-// static DEFINE_IDR(i3c_bus_idr);
+//static DEFINE_IDR(i3c_bus_idr);
 // static DEFINE_MUTEX(i3c_core_lock);
-// static int __i3c_first_dynamic_bus_num;
+static int __i3c_first_dynamic_bus_num;
 
 // /**
 //  * i3c_bus_maintenance_lock - Lock the bus for a maintenance operation
@@ -360,20 +368,20 @@
 // 	return status & I3C_ADDR_SLOT_STATUS_MASK;
 // }
 
-// static void i3c_bus_set_addr_slot_status(struct i3c_bus *bus, u16 addr,
-// 					 enum i3c_addr_slot_status status)
-// {
-// 	int bitpos = addr * 2;
-// 	unsigned long *ptr;
+static void i3c_bus_set_addr_slot_status(struct i3c_bus *bus, u16 addr,
+					 enum i3c_addr_slot_status status)
+{
+	int bitpos = addr * 2;
+	unsigned long *ptr;
 
-// 	if (addr > I2C_MAX_ADDR)
-// 		return;
+	if (addr > I2C_MAX_ADDR)
+		return;
 
-// 	ptr = bus->addrslots + (bitpos / BITS_PER_LONG);
-// 	*ptr &= ~((unsigned long)I3C_ADDR_SLOT_STATUS_MASK <<
-// 						(bitpos % BITS_PER_LONG));
-// 	*ptr |= (unsigned long)status << (bitpos % BITS_PER_LONG);
-// }
+	ptr = bus->addrslots + (bitpos / BITS_PER_LONG);
+	*ptr &= ~((unsigned long)I3C_ADDR_SLOT_STATUS_MASK <<
+						(bitpos % BITS_PER_LONG));
+	*ptr |= (unsigned long)status << (bitpos % BITS_PER_LONG);
+}
 
 // static bool i3c_bus_dev_addr_is_avail(struct i3c_bus *bus, u8 addr)
 // {
@@ -398,24 +406,24 @@
 // 	return -ENOMEM;
 // }
 
-// static void i3c_bus_init_addrslots(struct i3c_bus *bus)
-// {
-// 	int i;
+static void i3c_bus_init_addrslots(struct i3c_bus *bus)
+{
+	int i;
 
-// 	/* Addresses 0 to 7 are reserved. */
-// 	for (i = 0; i < 8; i++)
-// 		i3c_bus_set_addr_slot_status(bus, i, I3C_ADDR_SLOT_RSVD);
+	/* Addresses 0 to 7 are reserved. */
+	for (i = 0; i < 8; i++)
+		i3c_bus_set_addr_slot_status(bus, i, I3C_ADDR_SLOT_RSVD);
 
-// 	/*
-// 	 * Reserve broadcast address and all addresses that might collide
-// 	 * with the broadcast address when facing a single bit error.
-// 	 */
-// 	i3c_bus_set_addr_slot_status(bus, I3C_BROADCAST_ADDR,
-// 				     I3C_ADDR_SLOT_RSVD);
-// 	for (i = 0; i < 7; i++)
-// 		i3c_bus_set_addr_slot_status(bus, I3C_BROADCAST_ADDR ^ BIT(i),
-// 					     I3C_ADDR_SLOT_RSVD);
-// }
+	/*
+	 * Reserve broadcast address and all addresses that might collide
+	 * with the broadcast address when facing a single bit error.
+	 */
+	i3c_bus_set_addr_slot_status(bus, I3C_BROADCAST_ADDR,
+				     I3C_ADDR_SLOT_RSVD);
+	for (i = 0; i < 7; i++)
+		i3c_bus_set_addr_slot_status(bus, I3C_BROADCAST_ADDR ^ BIT(i),
+					     I3C_ADDR_SLOT_RSVD);
+}
 
 // static void i3c_bus_cleanup(struct i3c_bus *i3cbus)
 // {
@@ -424,11 +432,11 @@
 // 	mutex_unlock(&i3c_core_lock);
 // }
 
-// static int i3c_bus_init(struct i3c_bus *i3cbus, struct device_node *np)
-// {
-// 	int ret, start, end, id = -1;
+static int i3c_bus_init(struct i3c_bus *i3cbus, struct device_node *np)
+{
+	int ret, start, end, id = -1;
 
-// 	init_rwsem(&i3cbus->lock);
+// // 	init_rwsem(&i3cbus->lock);
 // 	INIT_LIST_HEAD(&i3cbus->devs.i2c);
 // 	INIT_LIST_HEAD(&i3cbus->devs.i3c);
 // 	i3c_bus_init_addrslots(i3cbus);
@@ -437,7 +445,7 @@
 // 	if (np)
 // 		id = of_alias_get_id(np, "i3c");
 
-// 	mutex_lock(&i3c_core_lock);
+// // 	mutex_lock(&i3c_core_lock);
 // 	if (id >= 0) {
 // 		start = id;
 // 		end = start + 1;
@@ -446,7 +454,7 @@
 // 		end = 0;
 // 	}
 
-// 	ret = idr_alloc(&i3c_bus_idr, i3cbus, start, end, GFP_KERNEL);
+	// ret = idr_alloc(&i3c_bus_idr, i3cbus, start, end, GFP_KERNEL);
 // 	mutex_unlock(&i3c_core_lock);
 
 // 	if (ret < 0)
@@ -480,8 +488,8 @@
 // 		ret = sprintf(buf, "%s\n", i3c_bus_mode_strings[i3cbus->mode]);
 // 	i3c_bus_normaluse_unlock(i3cbus);
 
-// 	return ret;
-// }
+	return ret;
+}
 // static DEVICE_ATTR_RO(mode);
 
 // static ssize_t current_master_show(struct device *dev,
@@ -2563,19 +2571,19 @@
 // }
 // EXPORT_SYMBOL_GPL(i3c_generic_ibi_recycle_slot);
 
-// static int i3c_master_check_ops(const struct i3c_master_controller_ops *ops)
-// {
-// 	if (!ops || !ops->bus_init || !ops->priv_xfers ||
-// 	    !ops->send_ccc_cmd || !ops->do_daa || !ops->i2c_xfers)
-// 		return -EINVAL;
+static int i3c_master_check_ops(const struct i3c_master_controller_ops *ops)
+{
+	// if (!ops || !ops->bus_init || !ops->priv_xfers ||
+	//     !ops->send_ccc_cmd || !ops->do_daa || !ops->i2c_xfers)
+	// 	return -EINVAL;
 
-// 	if (ops->request_ibi &&
-// 	    (!ops->enable_ibi || !ops->disable_ibi || !ops->free_ibi ||
-// 	     !ops->recycle_ibi_slot))
-// 		return -EINVAL;
+	// if (ops->request_ibi &&
+	//     (!ops->enable_ibi || !ops->disable_ibi || !ops->free_ibi ||
+	//      !ops->recycle_ibi_slot))
+	// 	return -EINVAL;
 
-// 	return 0;
-// }
+	return 0;
+}
 
 /**
  * i3c_master_register() - register an I3C master
@@ -2603,33 +2611,33 @@ int i3c_master_register(struct i3c_master_controller *master,
 			const struct i3c_master_controller_ops *ops,
 			bool secondary)
 {
-// 	unsigned long i2c_scl_rate = I3C_BUS_I2C_FM_PLUS_SCL_RATE;
-// 	struct i3c_bus *i3cbus = i3c_master_get_bus(master);
-// 	enum i3c_bus_mode mode = I3C_BUS_MODE_PURE;
-// 	struct i2c_dev_boardinfo *i2cbi;
+	unsigned long i2c_scl_rate = I3C_BUS_I2C_FM_PLUS_SCL_RATE;
+	struct i3c_bus *i3cbus = i3c_master_get_bus(master);
+	enum i3c_bus_mode mode = I3C_BUS_MODE_PURE;
+	struct i2c_dev_boardinfo *i2cbi;
 	int ret;
 
-// 	/* We do not support secondary masters yet. */
-// 	if (secondary)
-// 		return -ENOTSUPP;
+	/* We do not support secondary masters yet. */
+	if (secondary)
+		return -ENOTSUPP;
 
-// 	ret = i3c_master_check_ops(ops);
-// 	if (ret)
-// 		return ret;
+	ret = i3c_master_check_ops(ops);
+	if (ret)
+		return ret;
 
-// 	master->dev.parent = parent;
-// 	master->dev.of_node = of_node_get(parent->of_node);
-// 	master->dev.bus = &i3c_bus_type;
-// 	master->dev.type = &i3c_masterdev_type;
-// 	master->dev.release = i3c_masterdev_release;
-// 	master->ops = ops;
-// 	master->secondary = secondary;
-// 	INIT_LIST_HEAD(&master->boardinfo.i2c);
-// 	INIT_LIST_HEAD(&master->boardinfo.i3c);
+	// // master->dev.parent = parent;
+	// // master->dev.of_node = of_node_get(parent->of_node);
+	// master->dev.bus = &i3c_bus_type;
+	// master->dev.type = &i3c_masterdev_type;
+	// master->dev.release = i3c_masterdev_release;
+	master->ops = ops;
+	master->secondary = secondary;
+	INIT_LIST_HEAD(&master->boardinfo.i2c);
+	INIT_LIST_HEAD(&master->boardinfo.i3c);
 
-// 	ret = i3c_bus_init(i3cbus, master->dev.of_node);
-// 	if (ret)
-// 		return ret;
+	ret = i3c_bus_init(i3cbus, master->dev.of_node);
+	if (ret)
+		return ret;
 
 // 	device_initialize(&master->dev);
 // 	dev_set_name(&master->dev, "i3c-%d", i3cbus->id);

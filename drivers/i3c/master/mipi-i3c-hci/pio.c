@@ -5,6 +5,8 @@
  * Author: Nicolas Pitre <npitre@baylibre.com>
  */
 
+#include "mock_linux_overrides.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

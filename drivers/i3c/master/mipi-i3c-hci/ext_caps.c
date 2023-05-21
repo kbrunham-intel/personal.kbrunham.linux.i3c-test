@@ -5,6 +5,8 @@
  * Author: Nicolas Pitre <npitre@baylibre.com>
  */
 
+#include "mock_linux_overrides.h"
+
 // #include <linux/bitfield.h>
 // #include <linux/device.h>
 #include <linux/errno.h>
