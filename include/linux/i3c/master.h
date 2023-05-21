@@ -21,6 +21,7 @@
 #include "mock_types.h"
 #include "mock_device.h"
 #include "mock_bits.h"
+#include "mock_list.h"
 
 #define I3C_HOT_JOIN_ADDR		0x2
 #define I3C_BROADCAST_ADDR		0x7e
@@ -511,16 +512,16 @@ struct i3c_master_controller {
 // #define i3c_bus_for_each_i2cdev(bus, dev)				\
 // 	list_for_each_entry(dev, &(bus)->devs.i2c, common.node)
 
-// /**
-//  * i3c_bus_for_each_i3cdev() - iterate over all I3C devices present on the bus
-//  * @bus: the I3C bus
-//  * @dev: and I3C device descriptor pointer updated to point to the current slot
-//  *	 at each iteration of the loop
-//  *
-//  * Iterate over all I3C devs present on the bus.
-//  */
-// #define i3c_bus_for_each_i3cdev(bus, dev)				\
-// 	list_for_each_entry(dev, &(bus)->devs.i3c, common.node)
+/**
+ * i3c_bus_for_each_i3cdev() - iterate over all I3C devices present on the bus
+ * @bus: the I3C bus
+ * @dev: and I3C device descriptor pointer updated to point to the current slot
+ *	 at each iteration of the loop
+ *
+ * Iterate over all I3C devs present on the bus.
+ */
+#define i3c_bus_for_each_i3cdev(bus, dev)				\
+	list_for_each_entry(dev, &(bus)->devs.i3c, common.node)
 
 // int i3c_master_do_i2c_xfers(struct i3c_master_controller *master,
 // 			    const struct i2c_msg *xfers,
@@ -629,17 +630,17 @@ int i3c_master_register(struct i3c_master_controller *master,
 // 	return dev->common.master;
 // }
 
-// /**
-//  * i3c_master_get_bus() - get the bus attached to a master
-//  * @master: master object
-//  *
-//  * Return: the I3C bus @master is connected to
-//  */
-// static inline struct i3c_bus *
-// i3c_master_get_bus(struct i3c_master_controller *master)
-// {
-// 	return &master->bus;
-// }
+/**
+ * i3c_master_get_bus() - get the bus attached to a master
+ * @master: master object
+ *
+ * Return: the I3C bus @master is connected to
+ */
+static inline struct i3c_bus *
+i3c_master_get_bus(struct i3c_master_controller *master)
+{
+	return &master->bus;
+}
 
 // struct i3c_generic_ibi_pool;
 

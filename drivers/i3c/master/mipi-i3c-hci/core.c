@@ -19,6 +19,7 @@
 // #include <linux/iopoll.h>
 // #include <linux/module.h>
 // #include <linux/platform_device.h>
+#include <linux/kconfig.h>
 
 #include "hci.h"
 #include "ext_caps.h"
@@ -175,17 +176,17 @@
 // 		mipi_i3c_hci_dat_v1.cleanup(hci);
 // }
 
-// void mipi_i3c_hci_resume(struct i3c_hci *hci)
-// {
-// 	/* the HC_CONTROL_RESUME bit is R/W1C so just read and write back */
-// 	reg_write(HC_CONTROL, reg_read(HC_CONTROL));
-// }
+void mipi_i3c_hci_resume(struct i3c_hci *hci)
+{
+	/* the HC_CONTROL_RESUME bit is R/W1C so just read and write back */
+	reg_write(HC_CONTROL, reg_read(HC_CONTROL));
+}
 
-// /* located here rather than pio.c because needed bits are in core reg space */
-// void mipi_i3c_hci_pio_reset(struct i3c_hci *hci)
-// {
-// 	reg_write(RESET_CONTROL, RX_FIFO_RST | TX_FIFO_RST | RESP_QUEUE_RST);
-// }
+/* located here rather than pio.c because needed bits are in core reg space */
+void mipi_i3c_hci_pio_reset(struct i3c_hci *hci)
+{
+	reg_write(RESET_CONTROL, RX_FIFO_RST | TX_FIFO_RST | RESP_QUEUE_RST);
+}
 
 // /* located here rather than dct.c because needed bits are in core reg space */
 // void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci)
@@ -664,46 +665,46 @@ static int i3c_hci_init(struct i3c_hci *hci)
 	if (ret)
 		return -ENXIO;
 
-	// /* Disable all interrupts and allow all signal updates */
-	// reg_write(INTR_SIGNAL_ENABLE, 0x0);
-	// reg_write(INTR_STATUS_ENABLE, 0xffffffff);
+	/* Disable all interrupts and allow all signal updates */
+	reg_write(INTR_SIGNAL_ENABLE, 0x0);
+	reg_write(INTR_STATUS_ENABLE, 0xffffffff);
 
-	// /* Make sure our data ordering fits the host's */
-	// regval = reg_read(HC_CONTROL);
-	// if (IS_ENABLED(CONFIG_CPU_BIG_ENDIAN)) {
-	// 	if (!(regval & HC_CONTROL_DATA_BIG_ENDIAN)) {
-	// 		regval |= HC_CONTROL_DATA_BIG_ENDIAN;
-	// 		reg_write(HC_CONTROL, regval);
-	// 		regval = reg_read(HC_CONTROL);
-	// 		if (!(regval & HC_CONTROL_DATA_BIG_ENDIAN)) {
-	// 			dev_err(&hci->master.dev, "cannot set BE mode\n");
-	// 			return -EOPNOTSUPP;
-	// 		}
-	// 	}
-	// } else {
-	// 	if (regval & HC_CONTROL_DATA_BIG_ENDIAN) {
-	// 		regval &= ~HC_CONTROL_DATA_BIG_ENDIAN;
-	// 		reg_write(HC_CONTROL, regval);
-	// 		regval = reg_read(HC_CONTROL);
-	// 		if (regval & HC_CONTROL_DATA_BIG_ENDIAN) {
-	// 			dev_err(&hci->master.dev, "cannot clear BE mode\n");
-	// 			return -EOPNOTSUPP;
-	// 		}
-	// 	}
-	// }
+	/* Make sure our data ordering fits the host's */
+	regval = reg_read(HC_CONTROL);
+	if (IS_ENABLED(CONFIG_CPU_BIG_ENDIAN)) {
+		if (!(regval & HC_CONTROL_DATA_BIG_ENDIAN)) {
+			regval |= HC_CONTROL_DATA_BIG_ENDIAN;
+			reg_write(HC_CONTROL, regval);
+			regval = reg_read(HC_CONTROL);
+			if (!(regval & HC_CONTROL_DATA_BIG_ENDIAN)) {
+				dev_err(&hci->master.dev, "cannot set BE mode\n");
+				return -EOPNOTSUPP;
+			}
+		}
+	} else {
+		if (regval & HC_CONTROL_DATA_BIG_ENDIAN) {
+			regval &= ~HC_CONTROL_DATA_BIG_ENDIAN;
+			reg_write(HC_CONTROL, regval);
+			regval = reg_read(HC_CONTROL);
+			if (regval & HC_CONTROL_DATA_BIG_ENDIAN) {
+				dev_err(&hci->master.dev, "cannot clear BE mode\n");
+				return -EOPNOTSUPP;
+			}
+		}
+	}
 
-	// /* Select our command descriptor model */
-	// switch (FIELD_GET(HC_CAP_CMD_SIZE, hci->caps)) {
-	// case 0:
-	// 	hci->cmd = &mipi_i3c_hci_cmd_v1;
-	// 	break;
+	/* Select our command descriptor model */
+	switch (FIELD_GET(HC_CAP_CMD_SIZE, hci->caps)) {
+	case 0:
+		hci->cmd = &mipi_i3c_hci_cmd_v1;
+		break;
 	// case 1:
 	// 	hci->cmd = &mipi_i3c_hci_cmd_v2;
 	// 	break;
-	// default:
-	// 	dev_err(&hci->master.dev, "wrong CMD_SIZE capability value\n");
-	// 	return -EINVAL;
-	// }
+	default:
+		dev_err(&hci->master.dev, "wrong CMD_SIZE capability value\n");
+		return -EINVAL;
+	}
 
 	// /* Try activating DMA operations first */
 	// if (hci->RHS_regs) {
@@ -718,23 +719,23 @@ static int i3c_hci_init(struct i3c_hci *hci)
 	// }
 
 	// /* If no DMA, try PIO */
-	// if (!hci->io && hci->PIO_regs) {
-	// 	reg_set(HC_CONTROL, HC_CONTROL_PIO_MODE);
-	// 	if (!(reg_read(HC_CONTROL) & HC_CONTROL_PIO_MODE)) {
-	// 		dev_err(&hci->master.dev, "DMA mode is stuck\n");
-	// 		ret = -EIO;
-	// 	} else {
-	// 		hci->io = &mipi_i3c_hci_pio;
-	// 		dev_info(&hci->master.dev, "Using PIO\n");
-	// 	}
-	// }
+	if (!hci->io && hci->PIO_regs) {
+		reg_set(HC_CONTROL, HC_CONTROL_PIO_MODE);
+		if (!(reg_read(HC_CONTROL) & HC_CONTROL_PIO_MODE)) {
+			dev_err(&hci->master.dev, "DMA mode is stuck\n");
+			ret = -EIO;
+		} else {
+			hci->io = &mipi_i3c_hci_pio;
+			dev_info(&hci->master.dev, "Using PIO\n");
+		}
+	}
 
-	// if (!hci->io) {
-	// 	dev_err(&hci->master.dev, "neither DMA nor PIO can be used\n");
-	// 	if (!ret)
-	// 		ret = -EINVAL;
-	// 	return ret;
-	// }
+	if (!hci->io) {
+		dev_err(&hci->master.dev, "neither DMA nor PIO can be used\n");
+		if (!ret)
+			ret = -EINVAL;
+		return ret;
+	}
 
 	return 0;
 }

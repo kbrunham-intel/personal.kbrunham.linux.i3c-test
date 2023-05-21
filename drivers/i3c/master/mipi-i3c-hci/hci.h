@@ -45,9 +45,9 @@ struct i3c_hci {
 	void __iomem *EXTCAPS_regs;
 	void __iomem *AUTOCMD_regs;
 	void __iomem *DEBUG_regs;
-	// const struct hci_io_ops *io;
-	// void *io_data;
-	// const struct hci_cmd_ops *cmd;
+	const struct hci_io_ops *io;
+	void *io_data;
+	const struct hci_cmd_ops *cmd;
 	// atomic_t next_cmd_tid;
 	u32 caps;
 	unsigned int quirks;

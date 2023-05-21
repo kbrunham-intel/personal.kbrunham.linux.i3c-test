@@ -8,133 +8,134 @@
  */
 
 // #include <linux/bitfield.h>
-// #include <linux/i3c/master.h>
+#include <linux/i3c/master.h>
 
-// #include "hci.h"
-// #include "cmd.h"
-// #include "dat.h"
-// #include "dct.h"
+#include "hci.h"
+#include "cmd.h"
+#include "dat.h"
+#include "dct.h"
+
+#include "mock_bits.h"
+
+/*
+ * Address Assignment Command
+ */
+
+#define CMD_0_ATTR_A			FIELD_PREP(CMD_0_ATTR, 0x2)
+
+#define CMD_A0_TOC				   W0_BIT_(31)
+#define CMD_A0_ROC				   W0_BIT_(30)
+#define CMD_A0_DEV_COUNT(v)		FIELD_PREP(W0_MASK(29, 26), v)
+#define CMD_A0_DEV_INDEX(v)		FIELD_PREP(W0_MASK(20, 16), v)
+#define CMD_A0_CMD(v)			FIELD_PREP(W0_MASK(14,  7), v)
+#define CMD_A0_TID(v)			FIELD_PREP(W0_MASK( 6,  3), v)
+
+/*
+ * Immediate Data Transfer Command
+ */
+
+#define CMD_0_ATTR_I			FIELD_PREP(CMD_0_ATTR, 0x1)
+
+#define CMD_I1_DATA_BYTE_4(v)		FIELD_PREP(W1_MASK(63, 56), v)
+#define CMD_I1_DATA_BYTE_3(v)		FIELD_PREP(W1_MASK(55, 48), v)
+#define CMD_I1_DATA_BYTE_2(v)		FIELD_PREP(W1_MASK(47, 40), v)
+#define CMD_I1_DATA_BYTE_1(v)		FIELD_PREP(W1_MASK(39, 32), v)
+#define CMD_I1_DEF_BYTE(v)		FIELD_PREP(W1_MASK(39, 32), v)
+#define CMD_I0_TOC				   W0_BIT_(31)
+#define CMD_I0_ROC				   W0_BIT_(30)
+#define CMD_I0_RNW				   W0_BIT_(29)
+#define CMD_I0_MODE(v)			FIELD_PREP(W0_MASK(28, 26), v)
+#define CMD_I0_DTT(v)			FIELD_PREP(W0_MASK(25, 23), v)
+#define CMD_I0_DEV_INDEX(v)		FIELD_PREP(W0_MASK(20, 16), v)
+#define CMD_I0_CP				   W0_BIT_(15)
+#define CMD_I0_CMD(v)			FIELD_PREP(W0_MASK(14,  7), v)
+#define CMD_I0_TID(v)			FIELD_PREP(W0_MASK( 6,  3), v)
+
+/*
+ * Regular Data Transfer Command
+ */
+
+#define CMD_0_ATTR_R			FIELD_PREP(CMD_0_ATTR, 0x0)
+
+#define CMD_R1_DATA_LENGTH(v)		FIELD_PREP(W1_MASK(63, 48), v)
+#define CMD_R1_DEF_BYTE(v)		FIELD_PREP(W1_MASK(39, 32), v)
+#define CMD_R0_TOC				   W0_BIT_(31)
+#define CMD_R0_ROC				   W0_BIT_(30)
+#define CMD_R0_RNW				   W0_BIT_(29)
+#define CMD_R0_MODE(v)			FIELD_PREP(W0_MASK(28, 26), v)
+#define CMD_R0_DBP				   W0_BIT_(25)
+#define CMD_R0_DEV_INDEX(v)		FIELD_PREP(W0_MASK(20, 16), v)
+#define CMD_R0_CP				   W0_BIT_(15)
+#define CMD_R0_CMD(v)			FIELD_PREP(W0_MASK(14,  7), v)
+#define CMD_R0_TID(v)			FIELD_PREP(W0_MASK( 6,  3), v)
+
+/*
+ * Combo Transfer (Write + Write/Read) Command
+ */
+
+#define CMD_0_ATTR_C			FIELD_PREP(CMD_0_ATTR, 0x3)
+
+#define CMD_C1_DATA_LENGTH(v)		FIELD_PREP(W1_MASK(63, 48), v)
+#define CMD_C1_OFFSET(v)		FIELD_PREP(W1_MASK(47, 32), v)
+#define CMD_C0_TOC				   W0_BIT_(31)
+#define CMD_C0_ROC				   W0_BIT_(30)
+#define CMD_C0_RNW				   W0_BIT_(29)
+#define CMD_C0_MODE(v)			FIELD_PREP(W0_MASK(28, 26), v)
+#define CMD_C0_16_BIT_SUBOFFSET			   W0_BIT_(25)
+#define CMD_C0_FIRST_PHASE_MODE			   W0_BIT_(24)
+#define CMD_C0_DATA_LENGTH_POSITION(v)	FIELD_PREP(W0_MASK(23, 22), v)
+#define CMD_C0_DEV_INDEX(v)		FIELD_PREP(W0_MASK(20, 16), v)
+#define CMD_C0_CP				   W0_BIT_(15)
+#define CMD_C0_CMD(v)			FIELD_PREP(W0_MASK(14,  7), v)
+#define CMD_C0_TID(v)			FIELD_PREP(W0_MASK( 6,  3), v)
+
+/*
+ * Internal Control Command
+ */
+
+#define CMD_0_ATTR_M			FIELD_PREP(CMD_0_ATTR, 0x7)
+
+#define CMD_M1_VENDOR_SPECIFIC			   W1_MASK(63, 32)
+#define CMD_M0_MIPI_RESERVED			   W0_MASK(31, 12)
+#define CMD_M0_MIPI_CMD				   W0_MASK(11,  8)
+#define CMD_M0_VENDOR_INFO_PRESENT		   W0_BIT_( 7)
+#define CMD_M0_TID(v)			FIELD_PREP(W0_MASK( 6,  3), v)
 
 
-// /*
-//  * Address Assignment Command
-//  */
+/* Data Transfer Speed and Mode */
+enum hci_cmd_mode {
+	MODE_I3C_SDR0		= 0x0,
+	MODE_I3C_SDR1		= 0x1,
+	MODE_I3C_SDR2		= 0x2,
+	MODE_I3C_SDR3		= 0x3,
+	MODE_I3C_SDR4		= 0x4,
+	MODE_I3C_HDR_TSx	= 0x5,
+	MODE_I3C_HDR_DDR	= 0x6,
+	MODE_I3C_HDR_BT		= 0x7,
+	MODE_I3C_Fm_FmP		= 0x8,
+	MODE_I2C_Fm		= 0x0,
+	MODE_I2C_FmP		= 0x1,
+	MODE_I2C_UD1		= 0x2,
+	MODE_I2C_UD2		= 0x3,
+	MODE_I2C_UD3		= 0x4,
+};
 
-// #define CMD_0_ATTR_A			FIELD_PREP(CMD_0_ATTR, 0x2)
+static enum hci_cmd_mode get_i3c_mode(struct i3c_hci *hci)
+{
+	struct i3c_bus *bus = i3c_master_get_bus(&hci->master);
 
-// #define CMD_A0_TOC				   W0_BIT_(31)
-// #define CMD_A0_ROC				   W0_BIT_(30)
-// #define CMD_A0_DEV_COUNT(v)		FIELD_PREP(W0_MASK(29, 26), v)
-// #define CMD_A0_DEV_INDEX(v)		FIELD_PREP(W0_MASK(20, 16), v)
-// #define CMD_A0_CMD(v)			FIELD_PREP(W0_MASK(14,  7), v)
-// #define CMD_A0_TID(v)			FIELD_PREP(W0_MASK( 6,  3), v)
-
-// /*
-//  * Immediate Data Transfer Command
-//  */
-
-// #define CMD_0_ATTR_I			FIELD_PREP(CMD_0_ATTR, 0x1)
-
-// #define CMD_I1_DATA_BYTE_4(v)		FIELD_PREP(W1_MASK(63, 56), v)
-// #define CMD_I1_DATA_BYTE_3(v)		FIELD_PREP(W1_MASK(55, 48), v)
-// #define CMD_I1_DATA_BYTE_2(v)		FIELD_PREP(W1_MASK(47, 40), v)
-// #define CMD_I1_DATA_BYTE_1(v)		FIELD_PREP(W1_MASK(39, 32), v)
-// #define CMD_I1_DEF_BYTE(v)		FIELD_PREP(W1_MASK(39, 32), v)
-// #define CMD_I0_TOC				   W0_BIT_(31)
-// #define CMD_I0_ROC				   W0_BIT_(30)
-// #define CMD_I0_RNW				   W0_BIT_(29)
-// #define CMD_I0_MODE(v)			FIELD_PREP(W0_MASK(28, 26), v)
-// #define CMD_I0_DTT(v)			FIELD_PREP(W0_MASK(25, 23), v)
-// #define CMD_I0_DEV_INDEX(v)		FIELD_PREP(W0_MASK(20, 16), v)
-// #define CMD_I0_CP				   W0_BIT_(15)
-// #define CMD_I0_CMD(v)			FIELD_PREP(W0_MASK(14,  7), v)
-// #define CMD_I0_TID(v)			FIELD_PREP(W0_MASK( 6,  3), v)
-
-// /*
-//  * Regular Data Transfer Command
-//  */
-
-// #define CMD_0_ATTR_R			FIELD_PREP(CMD_0_ATTR, 0x0)
-
-// #define CMD_R1_DATA_LENGTH(v)		FIELD_PREP(W1_MASK(63, 48), v)
-// #define CMD_R1_DEF_BYTE(v)		FIELD_PREP(W1_MASK(39, 32), v)
-// #define CMD_R0_TOC				   W0_BIT_(31)
-// #define CMD_R0_ROC				   W0_BIT_(30)
-// #define CMD_R0_RNW				   W0_BIT_(29)
-// #define CMD_R0_MODE(v)			FIELD_PREP(W0_MASK(28, 26), v)
-// #define CMD_R0_DBP				   W0_BIT_(25)
-// #define CMD_R0_DEV_INDEX(v)		FIELD_PREP(W0_MASK(20, 16), v)
-// #define CMD_R0_CP				   W0_BIT_(15)
-// #define CMD_R0_CMD(v)			FIELD_PREP(W0_MASK(14,  7), v)
-// #define CMD_R0_TID(v)			FIELD_PREP(W0_MASK( 6,  3), v)
-
-// /*
-//  * Combo Transfer (Write + Write/Read) Command
-//  */
-
-// #define CMD_0_ATTR_C			FIELD_PREP(CMD_0_ATTR, 0x3)
-
-// #define CMD_C1_DATA_LENGTH(v)		FIELD_PREP(W1_MASK(63, 48), v)
-// #define CMD_C1_OFFSET(v)		FIELD_PREP(W1_MASK(47, 32), v)
-// #define CMD_C0_TOC				   W0_BIT_(31)
-// #define CMD_C0_ROC				   W0_BIT_(30)
-// #define CMD_C0_RNW				   W0_BIT_(29)
-// #define CMD_C0_MODE(v)			FIELD_PREP(W0_MASK(28, 26), v)
-// #define CMD_C0_16_BIT_SUBOFFSET			   W0_BIT_(25)
-// #define CMD_C0_FIRST_PHASE_MODE			   W0_BIT_(24)
-// #define CMD_C0_DATA_LENGTH_POSITION(v)	FIELD_PREP(W0_MASK(23, 22), v)
-// #define CMD_C0_DEV_INDEX(v)		FIELD_PREP(W0_MASK(20, 16), v)
-// #define CMD_C0_CP				   W0_BIT_(15)
-// #define CMD_C0_CMD(v)			FIELD_PREP(W0_MASK(14,  7), v)
-// #define CMD_C0_TID(v)			FIELD_PREP(W0_MASK( 6,  3), v)
-
-// /*
-//  * Internal Control Command
-//  */
-
-// #define CMD_0_ATTR_M			FIELD_PREP(CMD_0_ATTR, 0x7)
-
-// #define CMD_M1_VENDOR_SPECIFIC			   W1_MASK(63, 32)
-// #define CMD_M0_MIPI_RESERVED			   W0_MASK(31, 12)
-// #define CMD_M0_MIPI_CMD				   W0_MASK(11,  8)
-// #define CMD_M0_VENDOR_INFO_PRESENT		   W0_BIT_( 7)
-// #define CMD_M0_TID(v)			FIELD_PREP(W0_MASK( 6,  3), v)
-
-
-// /* Data Transfer Speed and Mode */
-// enum hci_cmd_mode {
-// 	MODE_I3C_SDR0		= 0x0,
-// 	MODE_I3C_SDR1		= 0x1,
-// 	MODE_I3C_SDR2		= 0x2,
-// 	MODE_I3C_SDR3		= 0x3,
-// 	MODE_I3C_SDR4		= 0x4,
-// 	MODE_I3C_HDR_TSx	= 0x5,
-// 	MODE_I3C_HDR_DDR	= 0x6,
-// 	MODE_I3C_HDR_BT		= 0x7,
-// 	MODE_I3C_Fm_FmP		= 0x8,
-// 	MODE_I2C_Fm		= 0x0,
-// 	MODE_I2C_FmP		= 0x1,
-// 	MODE_I2C_UD1		= 0x2,
-// 	MODE_I2C_UD2		= 0x3,
-// 	MODE_I2C_UD3		= 0x4,
-// };
-
-// static enum hci_cmd_mode get_i3c_mode(struct i3c_hci *hci)
-// {
-// 	struct i3c_bus *bus = i3c_master_get_bus(&hci->master);
-
-// 	if (bus->scl_rate.i3c >= 12500000)
-// 		return MODE_I3C_SDR0;
-// 	if (bus->scl_rate.i3c > 8000000)
-// 		return MODE_I3C_SDR1;
-// 	if (bus->scl_rate.i3c > 6000000)
-// 		return MODE_I3C_SDR2;
-// 	if (bus->scl_rate.i3c > 4000000)
-// 		return MODE_I3C_SDR3;
-// 	if (bus->scl_rate.i3c > 2000000)
-// 		return MODE_I3C_SDR4;
-// 	return MODE_I3C_Fm_FmP;
-// }
+	if (bus->scl_rate.i3c >= 12500000)
+		return MODE_I3C_SDR0;
+	if (bus->scl_rate.i3c > 8000000)
+		return MODE_I3C_SDR1;
+	if (bus->scl_rate.i3c > 6000000)
+		return MODE_I3C_SDR2;
+	if (bus->scl_rate.i3c > 4000000)
+		return MODE_I3C_SDR3;
+	if (bus->scl_rate.i3c > 2000000)
+		return MODE_I3C_SDR4;
+	return MODE_I3C_Fm_FmP;
+}
 
 // static enum hci_cmd_mode get_i2c_mode(struct i3c_hci *hci)
 // {
@@ -370,9 +371,9 @@
 // 	return ret;
 // }
 
-// const struct hci_cmd_ops mipi_i3c_hci_cmd_v1 = {
-// 	.prep_ccc		= hci_cmd_v1_prep_ccc,
-// 	.prep_i3c_xfer		= hci_cmd_v1_prep_i3c_xfer,
-// 	.prep_i2c_xfer		= hci_cmd_v1_prep_i2c_xfer,
-// 	.perform_daa		= hci_cmd_v1_daa,
-// };
+const struct hci_cmd_ops mipi_i3c_hci_cmd_v1 = {
+	// .prep_ccc		= hci_cmd_v1_prep_ccc,
+	// .prep_i3c_xfer		= hci_cmd_v1_prep_i3c_xfer,
+	// .prep_i2c_xfer		= hci_cmd_v1_prep_i2c_xfer,
+	// .perform_daa		= hci_cmd_v1_daa,
+};
