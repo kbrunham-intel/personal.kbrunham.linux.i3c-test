@@ -462,8 +462,8 @@ static int i3c_bus_init(struct i3c_bus *i3cbus, struct device_node *np)
 
 // 	i3cbus->id = ret;
 
-// 	return 0;
-// }
+	return 0;
+}
 
 // static const char * const i3c_bus_mode_strings[] = {
 // 	[I3C_BUS_MODE_PURE] = "pure",
@@ -488,8 +488,8 @@ static int i3c_bus_init(struct i3c_bus *i3cbus, struct device_node *np)
 // 		ret = sprintf(buf, "%s\n", i3c_bus_mode_strings[i3cbus->mode]);
 // 	i3c_bus_normaluse_unlock(i3cbus);
 
-	return ret;
-}
+// 	return ret;
+// }
 // static DEVICE_ATTR_RO(mode);
 
 // static ssize_t current_master_show(struct device *dev,
