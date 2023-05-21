@@ -8,7 +8,7 @@
 #include "mock_linux_overrides.h"
 
 // #include <linux/atomic.h>
-// #include <linux/bug.h>
+#include <linux/bug.h>
 #include <linux/device.h>
 // #include <linux/err.h>
 // #include <linux/export.h>

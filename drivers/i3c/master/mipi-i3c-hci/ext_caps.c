@@ -21,6 +21,7 @@
 #include "mock_bits.h"
 #include "mock_reg_access.h"
 #include "mock_i3c.h"
+#include <linux/bug.h>
 
 /* Extended Capability Header */
 #define CAP_HEADER_LENGTH		GENMASK(23, 8)

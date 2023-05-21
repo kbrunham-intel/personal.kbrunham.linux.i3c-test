@@ -18,6 +18,7 @@
 #include "dct.h"
 
 #include "mock_bits.h"
+#include <linux/bug.h>
 
 /*
  * Address Assignment Command
