@@ -26,7 +26,7 @@
 #include <linux/i3c/ccc.h>
 
 #include <linux/errno.h>
-#include "mock_types.h"
+#include <linux/types.h>
 #include "mock_bits.h"
 #include "mock_i3c.h"
 #include "mock_list.h"

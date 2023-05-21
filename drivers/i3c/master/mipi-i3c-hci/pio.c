@@ -23,7 +23,7 @@
 #include "ibi.h"
 
 #include "mock_bits.h"
-#include "mock_types.h"
+#include <linux/types.h>
 #include "mock_reg_access.h"
 #include "mock_i3c.h"
 

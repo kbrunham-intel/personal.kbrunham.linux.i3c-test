@@ -15,7 +15,7 @@
 // #include <linux/mod_devicetable.h>
 // #include <linux/module.h>
 
-#include "mock_types.h"
+#include <linux/types.h>
 
 /**
  * enum i3c_error_code - I3C error codes
