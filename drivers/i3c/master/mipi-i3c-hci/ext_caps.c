@@ -7,8 +7,8 @@
 
 #include "mock_linux_overrides.h"
 
-// #include <linux/bitfield.h>
-// #include <linux/device.h>
+#include <linux/bitfield.h>
+#include <linux/device.h>
 #include <linux/errno.h>
 #include <linux/i3c/master.h>
 // #include <linux/kernel.h>

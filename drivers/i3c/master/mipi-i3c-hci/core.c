@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// #include <linux/bitfield.h>
+#include <linux/bitfield.h>
 #include <linux/device.h>
 #include <linux/errno.h>
 #include <linux/i3c/master.h>
