@@ -19,7 +19,7 @@
 // #include <linux/workqueue.h>
 
 #include <linux/types.h>
-#include "mock_device.h"
+#include <linux/device.h>
 #include "mock_bits.h"
 #include <linux/list.h>
 

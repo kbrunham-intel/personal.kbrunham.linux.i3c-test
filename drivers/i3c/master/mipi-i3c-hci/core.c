@@ -13,14 +13,14 @@
 #include <stdio.h>
 
 // #include <linux/bitfield.h>
-// #include <linux/device.h>
+#include <linux/device.h>
 #include <linux/errno.h>
 #include <linux/i3c/master.h>
 // #include <linux/interrupt.h>
 // #include <linux/io.h>
 // #include <linux/iopoll.h>
 // #include <linux/module.h>
-// #include <linux/platform_device.h>
+#include <linux/platform_device.h>
 #include <linux/kconfig.h>
 
 #include "hci.h"
