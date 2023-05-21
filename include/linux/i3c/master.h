@@ -21,7 +21,7 @@
 #include <linux/types.h>
 #include "mock_device.h"
 #include "mock_bits.h"
-#include "mock_list.h"
+#include <linux/list.h>
 
 #define I3C_HOT_JOIN_ADDR		0x2
 #define I3C_BROADCAST_ADDR		0x7e
