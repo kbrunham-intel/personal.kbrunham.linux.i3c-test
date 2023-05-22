@@ -20,7 +20,7 @@
 // #include <linux/workqueue.h>
 
 #include <linux/errno.h>
-//#include <linux/idr.h>
+#include <linux/idr.h>
 
 #include "internals.h"
 #include <linux/i3c/ccc.h>
@@ -29,7 +29,7 @@
 #include <linux/types.h>
 #include "mock_i3c.h"
 
-//static DEFINE_IDR(i3c_bus_idr);
+static DEFINE_IDR(i3c_bus_idr);
 // static DEFINE_MUTEX(i3c_core_lock);
 static int __i3c_first_dynamic_bus_num;
 
@@ -435,30 +435,32 @@ static int i3c_bus_init(struct i3c_bus *i3cbus, struct device_node *np)
 	int ret, start, end, id = -1;
 
 // // 	init_rwsem(&i3cbus->lock);
-// 	INIT_LIST_HEAD(&i3cbus->devs.i2c);
-// 	INIT_LIST_HEAD(&i3cbus->devs.i3c);
-// 	i3c_bus_init_addrslots(i3cbus);
-// 	i3cbus->mode = I3C_BUS_MODE_PURE;
+	INIT_LIST_HEAD(&i3cbus->devs.i2c);
+	INIT_LIST_HEAD(&i3cbus->devs.i3c);
+	i3c_bus_init_addrslots(i3cbus);
+	i3cbus->mode = I3C_BUS_MODE_PURE;
 
 // 	if (np)
 // 		id = of_alias_get_id(np, "i3c");
 
-// // 	mutex_lock(&i3c_core_lock);
-// 	if (id >= 0) {
-// 		start = id;
-// 		end = start + 1;
-// 	} else {
-// 		start = __i3c_first_dynamic_bus_num;
-// 		end = 0;
-// 	}
 
+// // 	mutex_lock(&i3c_core_lock);
+	if (id >= 0) {
+		start = id;
+		end = start + 1;
+	} else {
+		start = __i3c_first_dynamic_bus_num;
+		end = 0;
+	}
+
+	ret = idr_alloc(&i3c_bus_idr, i3cbus, start, end, 0);
 	// ret = idr_alloc(&i3c_bus_idr, i3cbus, start, end, GFP_KERNEL);
 // 	mutex_unlock(&i3c_core_lock);
 
-// 	if (ret < 0)
-// 		return ret;
+	if (ret < 0)
+		return ret;
 
-// 	i3cbus->id = ret;
+	i3cbus->id = ret;
 
 	return 0;
 }

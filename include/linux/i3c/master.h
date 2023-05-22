@@ -20,7 +20,8 @@
 
 #include <linux/types.h>
 #include <linux/device.h>
-#include "mock_bits.h"
+// #include "mock_bits.h"
+#include <linux/kernel.h>
 #include <linux/list.h>
 
 #define I3C_HOT_JOIN_ADDR		0x2
