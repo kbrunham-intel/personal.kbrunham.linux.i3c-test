@@ -21,6 +21,8 @@
 
 #include <linux/bug.h>
 #include <linux/compiler_attributes.h>
+#include <linux/completion.h>
+#include <linux/param.h>
 
 /*
  * Address Assignment Command
@@ -225,40 +227,40 @@ static int hci_cmd_v1_prep_ccc(struct i3c_hci *hci,
 	return 0;
 }
 
-// static void hci_cmd_v1_prep_i3c_xfer(struct i3c_hci *hci,
-// 				     struct i3c_dev_desc *dev,
-// 				     struct hci_xfer *xfer)
-// {
-// 	struct i3c_hci_dev_data *dev_data = i3c_dev_get_master_data(dev);
-// 	unsigned int dat_idx = dev_data->dat_idx;
-// 	enum hci_cmd_mode mode = get_i3c_mode(hci);
-// 	u8 *data = xfer->data;
-// 	unsigned int data_len = xfer->data_len;
-// 	bool rnw = xfer->rnw;
+static void hci_cmd_v1_prep_i3c_xfer(struct i3c_hci *hci,
+				     struct i3c_dev_desc *dev,
+				     struct hci_xfer *xfer)
+{
+	struct i3c_hci_dev_data *dev_data = i3c_dev_get_master_data(dev);
+	unsigned int dat_idx = dev_data->dat_idx;
+	enum hci_cmd_mode mode = get_i3c_mode(hci);
+	u8 *data = xfer->data;
+	unsigned int data_len = xfer->data_len;
+	bool rnw = xfer->rnw;
 
-// 	xfer->cmd_tid = hci_get_tid();
+	xfer->cmd_tid = hci_get_tid();
 
-// 	if (!rnw && data_len <= 4) {
-// 		/* we use an Immediate Data Transfer Command */
-// 		xfer->cmd_desc[0] =
-// 			CMD_0_ATTR_I |
-// 			CMD_I0_TID(xfer->cmd_tid) |
-// 			CMD_I0_DEV_INDEX(dat_idx) |
-// 			CMD_I0_DTT(data_len) |
-// 			CMD_I0_MODE(mode);
-// 		fill_data_bytes(xfer, data, data_len);
-// 	} else {
-// 		/* we use a Regular Data Transfer Command */
-// 		xfer->cmd_desc[0] =
-// 			CMD_0_ATTR_R |
-// 			CMD_R0_TID(xfer->cmd_tid) |
-// 			CMD_R0_DEV_INDEX(dat_idx) |
-// 			CMD_R0_MODE(mode) |
-// 			(rnw ? CMD_R0_RNW : 0);
-// 		xfer->cmd_desc[1] =
-// 			CMD_R1_DATA_LENGTH(data_len);
-// 	}
-// }
+	if (!rnw && data_len <= 4) {
+		/* we use an Immediate Data Transfer Command */
+		xfer->cmd_desc[0] =
+			CMD_0_ATTR_I |
+			CMD_I0_TID(xfer->cmd_tid) |
+			CMD_I0_DEV_INDEX(dat_idx) |
+			CMD_I0_DTT(data_len) |
+			CMD_I0_MODE(mode);
+		fill_data_bytes(xfer, data, data_len);
+	} else {
+		/* we use a Regular Data Transfer Command */
+		xfer->cmd_desc[0] =
+			CMD_0_ATTR_R |
+			CMD_R0_TID(xfer->cmd_tid) |
+			CMD_R0_DEV_INDEX(dat_idx) |
+			CMD_R0_MODE(mode) |
+			(rnw ? CMD_R0_RNW : 0);
+		xfer->cmd_desc[1] =
+			CMD_R1_DATA_LENGTH(data_len);
+	}
+}
 
 // static void hci_cmd_v1_prep_i2c_xfer(struct i3c_hci *hci,
 // 				     struct i2c_dev_desc *dev,
@@ -295,90 +297,90 @@ static int hci_cmd_v1_prep_ccc(struct i3c_hci *hci,
 // 	}
 // }
 
-// static int hci_cmd_v1_daa(struct i3c_hci *hci)
-// {
-// 	struct hci_xfer *xfer;
-// 	int ret, dat_idx = -1;
-// 	u8 next_addr = 0;
-// 	u64 pid;
-// 	unsigned int dcr, bcr;
-// 	DECLARE_COMPLETION_ONSTACK(done);
+static int hci_cmd_v1_daa(struct i3c_hci *hci)
+{
+	struct hci_xfer *xfer;
+	int ret, dat_idx = -1;
+	u8 next_addr = 0;
+	u64 pid;
+	unsigned int dcr, bcr;
+	DECLARE_COMPLETION_ONSTACK(done);
 
-// 	xfer = hci_alloc_xfer(2);
-// 	if (!xfer)
-// 		return -ENOMEM;
+	xfer = hci_alloc_xfer(2);
+	if (!xfer)
+		return -ENOMEM;
 
-// 	/*
-// 	 * Simple for now: we allocate a temporary DAT entry, do a single
-// 	 * DAA, register the device which will allocate its own DAT entry
-// 	 * via the core callback, then free the temporary DAT entry.
-// 	 * Loop until there is no more devices to assign an address to.
-// 	 * Yes, there is room for improvements.
-// 	 */
-// 	for (;;) {
-// 		ret = mipi_i3c_hci_dat_v1.alloc_entry(hci);
-// 		if (ret < 0)
-// 			break;
-// 		dat_idx = ret;
-// 		ret = i3c_master_get_free_addr(&hci->master, next_addr);
-// 		if (ret < 0)
-// 			break;
-// 		next_addr = ret;
+	/*
+	 * Simple for now: we allocate a temporary DAT entry, do a single
+	 * DAA, register the device which will allocate its own DAT entry
+	 * via the core callback, then free the temporary DAT entry.
+	 * Loop until there is no more devices to assign an address to.
+	 * Yes, there is room for improvements.
+	 */
+	for (;;) {
+		ret = mipi_i3c_hci_dat_v1.alloc_entry(hci);
+		if (ret < 0)
+			break;
+		dat_idx = ret;
+		ret = i3c_master_get_free_addr(&hci->master, next_addr);
+		if (ret < 0)
+			break;
+		next_addr = ret;
 
-// 		DBG("next_addr = 0x%02x, DAA using DAT %d", next_addr, dat_idx);
-// 		mipi_i3c_hci_dat_v1.set_dynamic_addr(hci, dat_idx, next_addr);
-// 		mipi_i3c_hci_dct_index_reset(hci);
+		DBG("next_addr = 0x%02x, DAA using DAT %d", next_addr, dat_idx);
+		mipi_i3c_hci_dat_v1.set_dynamic_addr(hci, dat_idx, next_addr);
+		mipi_i3c_hci_dct_index_reset(hci);
 
-// 		xfer->cmd_tid = hci_get_tid();
-// 		xfer->cmd_desc[0] =
-// 			CMD_0_ATTR_A |
-// 			CMD_A0_TID(xfer->cmd_tid) |
-// 			CMD_A0_CMD(I3C_CCC_ENTDAA) |
-// 			CMD_A0_DEV_INDEX(dat_idx) |
-// 			CMD_A0_DEV_COUNT(1) |
-// 			CMD_A0_ROC | CMD_A0_TOC;
-// 		xfer->cmd_desc[1] = 0;
-// 		hci->io->queue_xfer(hci, xfer, 1);
-// 		if (!wait_for_completion_timeout(&done, HZ) &&
-// 		    hci->io->dequeue_xfer(hci, xfer, 1)) {
-// 			ret = -ETIME;
-// 			break;
-// 		}
-// 		if (RESP_STATUS(xfer[0].response) == RESP_ERR_NACK &&
-// 		    RESP_STATUS(xfer[0].response) == 1) {
-// 			ret = 0;  /* no more devices to be assigned */
-// 			break;
-// 		}
-// 		if (RESP_STATUS(xfer[0].response) != RESP_SUCCESS) {
-// 			ret = -EIO;
-// 			break;
-// 		}
+		xfer->cmd_tid = hci_get_tid();
+		xfer->cmd_desc[0] =
+			CMD_0_ATTR_A |
+			CMD_A0_TID(xfer->cmd_tid) |
+			CMD_A0_CMD(I3C_CCC_ENTDAA) |
+			CMD_A0_DEV_INDEX(dat_idx) |
+			CMD_A0_DEV_COUNT(1) |
+			CMD_A0_ROC | CMD_A0_TOC;
+		xfer->cmd_desc[1] = 0;
+		hci->io->queue_xfer(hci, xfer, 1);
+		if (!wait_for_completion_timeout(&done, HZ) &&
+		    hci->io->dequeue_xfer(hci, xfer, 1)) {
+			ret = -ETIME;
+			break;
+		}
+		if (RESP_STATUS(xfer[0].response) == RESP_ERR_NACK &&
+		    RESP_STATUS(xfer[0].response) == 1) {
+			ret = 0;  /* no more devices to be assigned */
+			break;
+		}
+		if (RESP_STATUS(xfer[0].response) != RESP_SUCCESS) {
+			ret = -EIO;
+			break;
+		}
 
-// 		i3c_hci_dct_get_val(hci, 0, &pid, &dcr, &bcr);
-// 		DBG("assigned address %#x to device PID=0x%llx DCR=%#x BCR=%#x",
-// 		    next_addr, pid, dcr, bcr);
+		i3c_hci_dct_get_val(hci, 0, &pid, &dcr, &bcr);
+		DBG("assigned address %#x to device PID=0x%lx DCR=%#x BCR=%#x",
+		    next_addr, pid, dcr, bcr);
 
-// 		mipi_i3c_hci_dat_v1.free_entry(hci, dat_idx);
-// 		dat_idx = -1;
+		mipi_i3c_hci_dat_v1.free_entry(hci, dat_idx);
+		dat_idx = -1;
 
-// 		/*
-// 		 * TODO: Extend the subsystem layer to allow for registering
-// 		 * new device and provide BCR/DCR/PID at the same time.
-// 		 */
-// 		ret = i3c_master_add_i3c_dev_locked(&hci->master, next_addr);
-// 		if (ret)
-// 			break;
-// 	}
+		/*
+		 * TODO: Extend the subsystem layer to allow for registering
+		 * new device and provide BCR/DCR/PID at the same time.
+		 */
+		ret = i3c_master_add_i3c_dev_locked(&hci->master, next_addr);
+		if (ret)
+			break;
+	}
 
-// 	if (dat_idx >= 0)
-// 		mipi_i3c_hci_dat_v1.free_entry(hci, dat_idx);
-// 	hci_free_xfer(xfer, 1);
-// 	return ret;
-// }
+	if (dat_idx >= 0)
+		mipi_i3c_hci_dat_v1.free_entry(hci, dat_idx);
+	hci_free_xfer(xfer, 1);
+	return ret;
+}
 
 const struct hci_cmd_ops mipi_i3c_hci_cmd_v1 = {
 	.prep_ccc		= hci_cmd_v1_prep_ccc,
-	// .prep_i3c_xfer		= hci_cmd_v1_prep_i3c_xfer,
+	.prep_i3c_xfer		= hci_cmd_v1_prep_i3c_xfer,
 	// .prep_i2c_xfer		= hci_cmd_v1_prep_i2c_xfer,
-	// .perform_daa		= hci_cmd_v1_daa,
+	.perform_daa		= hci_cmd_v1_daa,
 };

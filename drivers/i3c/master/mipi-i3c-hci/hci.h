@@ -16,7 +16,6 @@
 #include <linux/types.h>
 
 /* Handy logging macro to save on line length */
-//#define DBG(x, ...) pr_devel("%s: " x "\n", __func__, ##__VA_ARGS__)
 #define DBG(x, ...) printf("dev_dbg: %s() : " x "\n", __FUNCTION__, ##__VA_ARGS__)
 
 /* 32-bit word aware bit and mask macros */

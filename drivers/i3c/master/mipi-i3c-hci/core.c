@@ -198,11 +198,11 @@ void mipi_i3c_hci_pio_reset(struct i3c_hci *hci)
 	reg_write(RESET_CONTROL, RX_FIFO_RST | TX_FIFO_RST | RESP_QUEUE_RST);
 }
 
-// /* located here rather than dct.c because needed bits are in core reg space */
-// void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci)
-// {
-// 	reg_write(DCT_SECTION, FIELD_PREP(DCT_TABLE_INDEX, 0));
-// }
+/* located here rather than dct.c because needed bits are in core reg space */
+void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci)
+{
+	reg_write(DCT_SECTION, FIELD_PREP(DCT_TABLE_INDEX, 0));
+}
 
 static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
 				struct i3c_ccc_cmd *ccc)
@@ -541,7 +541,7 @@ static int i3c_hci_daa(struct i3c_master_controller *m)
 static const struct i3c_master_controller_ops i3c_hci_ops = {
 	.bus_init		= i3c_hci_bus_init,
 	// .bus_cleanup		= i3c_hci_bus_cleanup,
-	// .do_daa			= i3c_hci_daa,
+	.do_daa			= i3c_hci_daa,
 	.send_ccc_cmd		= i3c_hci_send_ccc_cmd,
 	// .priv_xfers		= i3c_hci_priv_xfers,
 	// .i2c_xfers		= i3c_hci_i2c_xfers,

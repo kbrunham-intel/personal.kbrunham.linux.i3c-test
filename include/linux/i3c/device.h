@@ -8,14 +8,16 @@
 #ifndef I3C_DEV_H
 #define I3C_DEV_H
 
-// #include <linux/bitops.h>
-// #include <linux/device.h>
+#include <linux/bitops.h>
+#include <linux/device.h>
 // #include <linux/i2c.h>
 // #include <linux/kconfig.h>
 // #include <linux/mod_devicetable.h>
 // #include <linux/module.h>
 
 #include <linux/types.h>
+#include <linux/device/driver.h>
+#include <linux/container_of.h>
 
 /**
  * enum i3c_error_code - I3C error codes
@@ -168,39 +170,39 @@ struct i3c_device;
 // 		.dcr = _dcr,						\
 // 	}
 
-// /**
-//  * struct i3c_driver - I3C device driver
-//  * @driver: inherit from device_driver
-//  * @probe: I3C device probe method
-//  * @remove: I3C device remove method
-//  * @id_table: I3C device match table. Will be used by the framework to decide
-//  *	      which device to bind to this driver
-//  */
-// struct i3c_driver {
-// 	struct device_driver driver;
-// 	int (*probe)(struct i3c_device *dev);
-// 	void (*remove)(struct i3c_device *dev);
-// 	const struct i3c_device_id *id_table;
-// };
+/**
+ * struct i3c_driver - I3C device driver
+ * @driver: inherit from device_driver
+ * @probe: I3C device probe method
+ * @remove: I3C device remove method
+ * @id_table: I3C device match table. Will be used by the framework to decide
+ *	      which device to bind to this driver
+ */
+struct i3c_driver {
+	struct device_driver driver;
+	int (*probe)(struct i3c_device *dev);
+	void (*remove)(struct i3c_device *dev);
+	const struct i3c_device_id *id_table;
+};
 
-// static inline struct i3c_driver *drv_to_i3cdrv(struct device_driver *drv)
-// {
-// 	return container_of(drv, struct i3c_driver, driver);
-// }
+static inline struct i3c_driver *drv_to_i3cdrv(struct device_driver *drv)
+{
+	return container_of(drv, struct i3c_driver, driver);
+}
 
-// struct device *i3cdev_to_dev(struct i3c_device *i3cdev);
+struct device *i3cdev_to_dev(struct i3c_device *i3cdev);
 
-// /**
-//  * dev_to_i3cdev() - Returns the I3C device containing @dev
-//  * @__dev: device object
-//  *
-//  * Return: a pointer to an I3C device object.
-//  */
-// #define dev_to_i3cdev(__dev)	container_of_const(__dev, struct i3c_device, dev)
+/**
+ * dev_to_i3cdev() - Returns the I3C device containing @dev
+ * @__dev: device object
+ *
+ * Return: a pointer to an I3C device object.
+ */
+#define dev_to_i3cdev(__dev)	container_of_const(__dev, struct i3c_device, dev)
 
-// const struct i3c_device_id *
-// i3c_device_match_id(struct i3c_device *i3cdev,
-// 		    const struct i3c_device_id *id_table);
+const struct i3c_device_id *
+i3c_device_match_id(struct i3c_device *i3cdev,
+		    const struct i3c_device_id *id_table);
 
 // static inline void i3cdev_set_drvdata(struct i3c_device *i3cdev,
 // 				      void *data)
