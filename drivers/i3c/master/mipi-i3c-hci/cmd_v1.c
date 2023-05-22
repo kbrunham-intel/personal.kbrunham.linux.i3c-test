@@ -9,7 +9,7 @@
 
 #include "mock_linux_overrides.h"
 
-//#include <linux/bitfield.h>
+#include <linux/bitfield.h>
 #include <linux/i3c/master.h>
 
 #include "hci.h"
@@ -17,7 +17,6 @@
 #include "dat.h"
 #include "dct.h"
 
-#include "mock_bits.h"
 #include <linux/bug.h>
 
 /*

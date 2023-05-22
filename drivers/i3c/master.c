@@ -12,7 +12,7 @@
 #include <linux/device.h>
 // #include <linux/err.h>
 // #include <linux/export.h>
-// #include <linux/kernel.h>
+#include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/of.h>
 // #include <linux/slab.h>
@@ -27,7 +27,6 @@
 
 #include <linux/errno.h>
 #include <linux/types.h>
-#include "mock_bits.h"
 #include "mock_i3c.h"
 
 //static DEFINE_IDR(i3c_bus_idr);

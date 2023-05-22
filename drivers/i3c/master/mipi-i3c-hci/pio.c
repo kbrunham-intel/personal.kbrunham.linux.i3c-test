@@ -13,7 +13,7 @@
 
 
 #include <linux/bitfield.h>
-// #include <linux/device.h>
+#include <linux/device.h>
 #include <linux/errno.h>
 #include <linux/i3c/master.h>
 // #include <linux/io.h>
@@ -22,7 +22,6 @@
 #include "cmd.h"
 #include "ibi.h"
 
-#include "mock_bits.h"
 #include <linux/types.h>
 #include "mock_reg_access.h"
 #include "mock_i3c.h"

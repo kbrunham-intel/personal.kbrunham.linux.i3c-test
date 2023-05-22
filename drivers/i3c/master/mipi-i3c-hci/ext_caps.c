@@ -18,7 +18,6 @@
 #include "ext_caps.h"
 #include "xfer_mode_rate.h"
 
-#include "mock_bits.h"
 #include "mock_reg_access.h"
 #include "mock_i3c.h"
 #include <linux/bug.h>
