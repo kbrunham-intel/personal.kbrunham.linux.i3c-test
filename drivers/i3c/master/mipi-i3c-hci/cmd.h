@@ -10,6 +10,8 @@
 #ifndef CMD_H
 #define CMD_H
 
+#include <linux/types.h>
+
 /*
  * Those bits are common to all descriptor formats and
  * may be manipulated by the core code.
@@ -45,9 +47,17 @@ enum hci_resp_err {
 	/* 0xc to 0xf are reserved for transfer specific errors */
 };
 
+static inline int atomic_inc_return_relaxed_override(atomic_t *v)
+{
+	v->counter++;
+	return v->counter;
+}
+
 /* TID generation (4 bits wide in all cases) */
 #define hci_get_tid(bits) \
-	(atomic_inc_return_relaxed(&hci->next_cmd_tid) % (1U << 4))
+	(atomic_inc_return_relaxed_override(&hci->next_cmd_tid) % (1U << 4))
+
+//	(atomic_inc_return_relaxed(&hci->next_cmd_tid) % (1U << 4))
 
 /* This abstracts operations with our command descriptor formats */
 struct hci_cmd_ops {

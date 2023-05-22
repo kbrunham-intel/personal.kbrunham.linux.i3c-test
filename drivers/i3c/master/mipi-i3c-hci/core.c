@@ -23,6 +23,9 @@
 #include <linux/platform_device.h>
 #include <linux/kconfig.h>
 
+#include <linux/completion.h>
+#include <linux/param.h>
+
 #include "hci.h"
 #include "ext_caps.h"
 #include "cmd.h"
@@ -30,6 +33,8 @@
 
 #include "mock_i3c.h"
 #include "mock_reg_access.h"
+
+#include <string.h>
 
 // /*
 //  * Host Controller Capabilities and Operation Registers
@@ -126,45 +131,48 @@
 #define DEV_CTX_BASE_HI			0x64
 
 
-// static inline struct i3c_hci *to_i3c_hci(struct i3c_master_controller *m)
-// {
-// 	return container_of(m, struct i3c_hci, master);
-// }
+static inline struct i3c_hci *to_i3c_hci(struct i3c_master_controller *m)
+{
+	return container_of(m, struct i3c_hci, master);
+}
 
-// static int i3c_hci_bus_init(struct i3c_master_controller *m)
-// {
-// 	struct i3c_hci *hci = to_i3c_hci(m);
-// 	struct i3c_device_info info;
-// 	int ret;
+static int i3c_hci_bus_init(struct i3c_master_controller *m)
+{
+	struct i3c_hci *hci = to_i3c_hci(m);
+	struct i3c_device_info info;
+	int ret;
 
-// 	DBG("");
+	DBG("");
 
-// 	if (hci->cmd == &mipi_i3c_hci_cmd_v1) {
-// 		ret = mipi_i3c_hci_dat_v1.init(hci);
-// 		if (ret)
-// 			return ret;
-// 	}
+	if (hci->cmd == &mipi_i3c_hci_cmd_v1) {
+		ret = mipi_i3c_hci_dat_v1.init(hci);
+		if (ret)
+			return ret;
+	}
+	else {
+		abort();
+	}
 
-// 	ret = i3c_master_get_free_addr(m, 0);
-// 	if (ret < 0)
-// 		return ret;
-// 	reg_write(MASTER_DEVICE_ADDR,
-// 		  MASTER_DYNAMIC_ADDR(ret) | MASTER_DYNAMIC_ADDR_VALID);
-// 	memset(&info, 0, sizeof(info));
-// 	info.dyn_addr = ret;
-// 	ret = i3c_master_set_info(m, &info);
-// 	if (ret)
-// 		return ret;
+	ret = i3c_master_get_free_addr(m, 0);
+	if (ret < 0)
+		return ret;
+	reg_write(MASTER_DEVICE_ADDR,
+		  MASTER_DYNAMIC_ADDR(ret) | MASTER_DYNAMIC_ADDR_VALID);
+	memset(&info, 0, sizeof(info));
+	info.dyn_addr = ret;
+	ret = i3c_master_set_info(m, &info);
+	if (ret)
+		return ret;
 
-// 	ret = hci->io->init(hci);
-// 	if (ret)
-// 		return ret;
+	ret = hci->io->init(hci);
+	if (ret)
+		return ret;
 
-// 	reg_set(HC_CONTROL, HC_CONTROL_BUS_ENABLE);
-// 	DBG("HC_CONTROL = %#x", reg_read(HC_CONTROL));
+	reg_set(HC_CONTROL, HC_CONTROL_BUS_ENABLE);
+	DBG("HC_CONTROL = %#x", reg_read(HC_CONTROL));
 
-// 	return 0;
-// }
+	return 0;
+}
 
 // static void i3c_hci_bus_cleanup(struct i3c_master_controller *m)
 // {
@@ -196,85 +204,86 @@ void mipi_i3c_hci_pio_reset(struct i3c_hci *hci)
 // 	reg_write(DCT_SECTION, FIELD_PREP(DCT_TABLE_INDEX, 0));
 // }
 
-// static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
-// 				struct i3c_ccc_cmd *ccc)
-// {
-// 	struct i3c_hci *hci = to_i3c_hci(m);
-// 	struct hci_xfer *xfer;
-// 	bool raw = !!(hci->quirks & HCI_QUIRK_RAW_CCC);
-// 	bool prefixed = raw && !!(ccc->id & I3C_CCC_DIRECT);
-// 	unsigned int nxfers = ccc->ndests + prefixed;
-// 	DECLARE_COMPLETION_ONSTACK(done);
-// 	int i, last, ret = 0;
+static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
+				struct i3c_ccc_cmd *ccc)
+{
+	struct i3c_hci *hci = to_i3c_hci(m);
+	struct hci_xfer *xfer;
+	bool raw = !!(hci->quirks & HCI_QUIRK_RAW_CCC);
+	bool prefixed = raw && !!(ccc->id & I3C_CCC_DIRECT);
+	unsigned int nxfers = ccc->ndests + prefixed;
+	//DECLARE_COMPLETION_ONSTACK(done);
+	struct completion done;
+	int i, last, ret = 0;
 
-// 	DBG("cmd=%#x rnw=%d ndests=%d data[0].len=%d",
-// 	    ccc->id, ccc->rnw, ccc->ndests, ccc->dests[0].payload.len);
+	DBG("cmd=%#x rnw=%d ndests=%d data[0].len=%d",
+	    ccc->id, ccc->rnw, ccc->ndests, ccc->dests[0].payload.len);
 
-// 	xfer = hci_alloc_xfer(nxfers);
-// 	if (!xfer)
-// 		return -ENOMEM;
+	xfer = hci_alloc_xfer(nxfers);
+	if (!xfer)
+		return -ENOMEM;
 
-// 	if (prefixed) {
-// 		xfer->data = NULL;
-// 		xfer->data_len = 0;
-// 		xfer->rnw = false;
-// 		hci->cmd->prep_ccc(hci, xfer, I3C_BROADCAST_ADDR,
-// 				   ccc->id, true);
-// 		xfer++;
-// 	}
+	if (prefixed) {
+		xfer->data = NULL;
+		xfer->data_len = 0;
+		xfer->rnw = false;
+		hci->cmd->prep_ccc(hci, xfer, I3C_BROADCAST_ADDR,
+				   ccc->id, true);
+		xfer++;
+	}
 
-// 	for (i = 0; i < nxfers - prefixed; i++) {
-// 		xfer[i].data = ccc->dests[i].payload.data;
-// 		xfer[i].data_len = ccc->dests[i].payload.len;
-// 		xfer[i].rnw = ccc->rnw;
-// 		ret = hci->cmd->prep_ccc(hci, &xfer[i], ccc->dests[i].addr,
-// 					 ccc->id, raw);
-// 		if (ret)
-// 			goto out;
-// 		xfer[i].cmd_desc[0] |= CMD_0_ROC;
-// 	}
-// 	last = i - 1;
-// 	xfer[last].cmd_desc[0] |= CMD_0_TOC;
-// 	xfer[last].completion = &done;
+	for (i = 0; i < nxfers - prefixed; i++) {
+		xfer[i].data = ccc->dests[i].payload.data;
+		xfer[i].data_len = ccc->dests[i].payload.len;
+		xfer[i].rnw = ccc->rnw;
+		ret = hci->cmd->prep_ccc(hci, &xfer[i], ccc->dests[i].addr,
+					 ccc->id, raw);
+		if (ret)
+			goto out;
+		xfer[i].cmd_desc[0] |= CMD_0_ROC;
+	}
+	last = i - 1;
+	xfer[last].cmd_desc[0] |= CMD_0_TOC;
+	xfer[last].completion = &done;
 
-// 	if (prefixed)
-// 		xfer--;
+	if (prefixed)
+		xfer--;
 
-// 	ret = hci->io->queue_xfer(hci, xfer, nxfers);
-// 	if (ret)
-// 		goto out;
-// 	if (!wait_for_completion_timeout(&done, HZ) &&
-// 	    hci->io->dequeue_xfer(hci, xfer, nxfers)) {
-// 		ret = -ETIME;
-// 		goto out;
-// 	}
-// 	for (i = prefixed; i < nxfers; i++) {
-// 		if (ccc->rnw)
-// 			ccc->dests[i - prefixed].payload.len =
-// 				RESP_DATA_LENGTH(xfer[i].response);
-// 		if (RESP_STATUS(xfer[i].response) != RESP_SUCCESS) {
-// 			ret = -EIO;
-// 			goto out;
-// 		}
-// 	}
+	ret = hci->io->queue_xfer(hci, xfer, nxfers);
+	if (ret)
+		goto out;
+	if (!wait_for_completion_timeout(&done, HZ) &&
+	    hci->io->dequeue_xfer(hci, xfer, nxfers)) {
+		ret = -ETIME;
+		goto out;
+	}
+	for (i = prefixed; i < nxfers; i++) {
+		if (ccc->rnw)
+			ccc->dests[i - prefixed].payload.len =
+				RESP_DATA_LENGTH(xfer[i].response);
+		if (RESP_STATUS(xfer[i].response) != RESP_SUCCESS) {
+			ret = -EIO;
+			goto out;
+		}
+	}
 
-// 	if (ccc->rnw)
-// 		DBG("got: %*ph",
-// 		    ccc->dests[0].payload.len, ccc->dests[0].payload.data);
+	if (ccc->rnw)
+		DBG("got: %*ph",
+		    ccc->dests[0].payload.len, ccc->dests[0].payload.data);
 
-// out:
-// 	hci_free_xfer(xfer, nxfers);
-// 	return ret;
-// }
+out:
+	hci_free_xfer(xfer, nxfers);
+	return ret;
+}
 
-// static int i3c_hci_daa(struct i3c_master_controller *m)
-// {
-// 	struct i3c_hci *hci = to_i3c_hci(m);
+static int i3c_hci_daa(struct i3c_master_controller *m)
+{
+	struct i3c_hci *hci = to_i3c_hci(m);
 
-// 	DBG("");
+	DBG("");
 
-// 	return hci->cmd->perform_daa(hci);
-// }
+	return hci->cmd->perform_daa(hci);
+}
 
 // static int i3c_hci_priv_xfers(struct i3c_dev_desc *dev,
 // 			      struct i3c_priv_xfer *i3c_xfers,
@@ -530,10 +539,10 @@ void mipi_i3c_hci_pio_reset(struct i3c_hci *hci)
 // }
 
 static const struct i3c_master_controller_ops i3c_hci_ops = {
-	// .bus_init		= i3c_hci_bus_init,
+	.bus_init		= i3c_hci_bus_init,
 	// .bus_cleanup		= i3c_hci_bus_cleanup,
 	// .do_daa			= i3c_hci_daa,
-	// .send_ccc_cmd		= i3c_hci_send_ccc_cmd,
+	.send_ccc_cmd		= i3c_hci_send_ccc_cmd,
 	// .priv_xfers		= i3c_hci_priv_xfers,
 	// .i2c_xfers		= i3c_hci_i2c_xfers,
 	// .attach_i3c_dev		= i3c_hci_attach_i3c_dev,

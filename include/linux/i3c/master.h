@@ -12,7 +12,7 @@
 
 #include <linux/bitops.h>
 // #include <linux/i2c.h>
-// #include <linux/i3c/ccc.h>
+#include <linux/i3c/ccc.h>
 #include <linux/i3c/device.h>
 // #include <linux/rwsem.h>
 // #include <linux/spinlock.h>
@@ -161,34 +161,34 @@ struct i3c_i2c_dev_desc {
 // 			const struct i3c_ibi_payload *payload);
 // };
 
-// /**
-//  * struct i3c_dev_boardinfo - I3C device board information
-//  * @node: used to insert the boardinfo object in the I3C boardinfo list
-//  * @init_dyn_addr: initial dynamic address requested by the FW. We provide no
-//  *		   guarantee that the device will end up using this address,
-//  *		   but try our best to assign this specific address to the
-//  *		   device
-//  * @static_addr: static address the I3C device listen on before it's been
-//  *		 assigned a dynamic address by the master. Will be used during
-//  *		 bus initialization to assign it a specific dynamic address
-//  *		 before starting DAA (Dynamic Address Assignment)
-//  * @pid: I3C Provisional ID exposed by the device. This is a unique identifier
-//  *	 that may be used to attach boardinfo to i3c_dev_desc when the device
-//  *	 does not have a static address
-//  * @of_node: optional DT node in case the device has been described in the DT
-//  *
-//  * This structure is used to attach board-level information to an I3C device.
-//  * Not all I3C devices connected on the bus will have a boardinfo. It's only
-//  * needed if you want to attach extra resources to a device or assign it a
-//  * specific dynamic address.
-//  */
-// struct i3c_dev_boardinfo {
-// 	struct list_head node;
-// 	u8 init_dyn_addr;
-// 	u8 static_addr;
-// 	u64 pid;
-// 	struct device_node *of_node;
-// };
+/**
+ * struct i3c_dev_boardinfo - I3C device board information
+ * @node: used to insert the boardinfo object in the I3C boardinfo list
+ * @init_dyn_addr: initial dynamic address requested by the FW. We provide no
+ *		   guarantee that the device will end up using this address,
+ *		   but try our best to assign this specific address to the
+ *		   device
+ * @static_addr: static address the I3C device listen on before it's been
+ *		 assigned a dynamic address by the master. Will be used during
+ *		 bus initialization to assign it a specific dynamic address
+ *		 before starting DAA (Dynamic Address Assignment)
+ * @pid: I3C Provisional ID exposed by the device. This is a unique identifier
+ *	 that may be used to attach boardinfo to i3c_dev_desc when the device
+ *	 does not have a static address
+ * @of_node: optional DT node in case the device has been described in the DT
+ *
+ * This structure is used to attach board-level information to an I3C device.
+ * Not all I3C devices connected on the bus will have a boardinfo. It's only
+ * needed if you want to attach extra resources to a device or assign it a
+ * specific dynamic address.
+ */
+struct i3c_dev_boardinfo {
+	struct list_head node;
+	u8 init_dyn_addr;
+	u8 static_addr;
+	u64 pid;
+	struct device_node *of_node;
+};
 
 /**
  * struct i3c_dev_desc - I3C device descriptor
@@ -436,14 +436,14 @@ struct i3c_bus {
 struct i3c_master_controller_ops {
 	int (*bus_init)(struct i3c_master_controller *master);
 	// void (*bus_cleanup)(struct i3c_master_controller *master);
-	// int (*attach_i3c_dev)(struct i3c_dev_desc *dev);
+	int (*attach_i3c_dev)(struct i3c_dev_desc *dev);
 	// int (*reattach_i3c_dev)(struct i3c_dev_desc *dev, u8 old_dyn_addr);
 	// void (*detach_i3c_dev)(struct i3c_dev_desc *dev);
 	// int (*do_daa)(struct i3c_master_controller *master);
-	// bool (*supports_ccc_cmd)(struct i3c_master_controller *master,
-	// 			 const struct i3c_ccc_cmd *cmd);
-	// int (*send_ccc_cmd)(struct i3c_master_controller *master,
-	// 		    struct i3c_ccc_cmd *cmd);
+	bool (*supports_ccc_cmd)(struct i3c_master_controller *master,
+				 const struct i3c_ccc_cmd *cmd);
+	int (*send_ccc_cmd)(struct i3c_master_controller *master,
+			    struct i3c_ccc_cmd *cmd);
 	// int (*priv_xfers)(struct i3c_dev_desc *dev,
 	// 		  struct i3c_priv_xfer *xfers,
 	// 		  int nxfers);
@@ -532,37 +532,37 @@ struct i3c_master_controller {
 // 			    u8 evts);
 // int i3c_master_enec_locked(struct i3c_master_controller *master, u8 addr,
 // 			   u8 evts);
-// int i3c_master_entdaa_locked(struct i3c_master_controller *master);
+int i3c_master_entdaa_locked(struct i3c_master_controller *master);
 // int i3c_master_defslvs_locked(struct i3c_master_controller *master);
 
-// int i3c_master_get_free_addr(struct i3c_master_controller *master,
-// 			     u8 start_addr);
+int i3c_master_get_free_addr(struct i3c_master_controller *master,
+			     u8 start_addr);
 
-// int i3c_master_add_i3c_dev_locked(struct i3c_master_controller *master,
-// 				  u8 addr);
-// int i3c_master_do_daa(struct i3c_master_controller *master);
+int i3c_master_add_i3c_dev_locked(struct i3c_master_controller *master,
+				  u8 addr);
+int i3c_master_do_daa(struct i3c_master_controller *master);
 
-// int i3c_master_set_info(struct i3c_master_controller *master,
-// 			const struct i3c_device_info *info);
+int i3c_master_set_info(struct i3c_master_controller *master,
+			const struct i3c_device_info *info);
 
 int i3c_master_register(struct i3c_master_controller *master,
 			struct device *parent,
 			const struct i3c_master_controller_ops *ops,
 			bool secondary);
-// void i3c_master_unregister(struct i3c_master_controller *master);
+void i3c_master_unregister(struct i3c_master_controller *master);
 
-// /**
-//  * i3c_dev_get_master_data() - get master private data attached to an I3C
-//  *			       device descriptor
-//  * @dev: the I3C device descriptor to get private data from
-//  *
-//  * Return: the private data previously attached with i3c_dev_set_master_data()
-//  *	   or NULL if no data has been attached to the device.
-//  */
-// static inline void *i3c_dev_get_master_data(const struct i3c_dev_desc *dev)
-// {
-// 	return dev->common.master_priv;
-// }
+/**
+ * i3c_dev_get_master_data() - get master private data attached to an I3C
+ *			       device descriptor
+ * @dev: the I3C device descriptor to get private data from
+ *
+ * Return: the private data previously attached with i3c_dev_set_master_data()
+ *	   or NULL if no data has been attached to the device.
+ */
+static inline void *i3c_dev_get_master_data(const struct i3c_dev_desc *dev)
+{
+	return dev->common.master_priv;
+}
 
 // /**
 //  * i3c_dev_set_master_data() - attach master private data to an I3C device
@@ -607,17 +607,17 @@ int i3c_master_register(struct i3c_master_controller *master,
 // 	dev->common.master_priv = data;
 // }
 
-// /**
-//  * i3c_dev_get_master() - get master used to communicate with a device
-//  * @dev: I3C dev
-//  *
-//  * Return: the master controller driving @dev
-//  */
-// static inline struct i3c_master_controller *
-// i3c_dev_get_master(struct i3c_dev_desc *dev)
-// {
-// 	return dev->common.master;
-// }
+/**
+ * i3c_dev_get_master() - get master used to communicate with a device
+ * @dev: I3C dev
+ *
+ * Return: the master controller driving @dev
+ */
+static inline struct i3c_master_controller *
+i3c_dev_get_master(struct i3c_dev_desc *dev)
+{
+	return dev->common.master;
+}
 
 // /**
 //  * i2c_dev_get_master() - get master used to communicate with a device

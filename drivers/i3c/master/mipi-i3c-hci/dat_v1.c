@@ -5,78 +5,83 @@
  * Author: Nicolas Pitre <npitre@baylibre.com>
  */
 
-// #include <linux/bitfield.h>
-// #include <linux/bitmap.h>
-// #include <linux/device.h>
-// #include <linux/errno.h>
-// #include <linux/i3c/master.h>
+#include "mock_linux_overrides.h"
+#include "mock_i3c.h"
+#include "mock_reg_access.h"
+
+#include <linux/bitfield.h>
+#include <linux/bitmap.h>
+#include <linux/device.h>
+#include <linux/errno.h>
+#include <linux/i3c/master.h>
 // #include <linux/io.h>
 
-// #include "hci.h"
-// #include "dat.h"
+#include "hci.h"
+#include "dat.h"
 
 
-// /*
-//  * Device Address Table Structure
-//  */
+/*
+ * Device Address Table Structure
+ */
 
-// #define DAT_1_AUTOCMD_HDR_CODE		W1_MASK(58, 51)
-// #define DAT_1_AUTOCMD_MODE		W1_MASK(50, 48)
-// #define DAT_1_AUTOCMD_VALUE		W1_MASK(47, 40)
-// #define DAT_1_AUTOCMD_MASK		W1_MASK(39, 32)
-// /*	DAT_0_I2C_DEVICE		W0_BIT_(31) */
-// #define DAT_0_DEV_NACK_RETRY_CNT	W0_MASK(30, 29)
-// #define DAT_0_RING_ID			W0_MASK(28, 26)
-// #define DAT_0_DYNADDR_PARITY		W0_BIT_(23)
-// #define DAT_0_DYNAMIC_ADDRESS		W0_MASK(22, 16)
-// #define DAT_0_TS			W0_BIT_(15)
-// #define DAT_0_MR_REJECT			W0_BIT_(14)
-// /*	DAT_0_SIR_REJECT		W0_BIT_(13) */
-// /*	DAT_0_IBI_PAYLOAD		W0_BIT_(12) */
-// #define DAT_0_STATIC_ADDRESS		W0_MASK(6, 0)
+#define DAT_1_AUTOCMD_HDR_CODE		W1_MASK(58, 51)
+#define DAT_1_AUTOCMD_MODE		W1_MASK(50, 48)
+#define DAT_1_AUTOCMD_VALUE		W1_MASK(47, 40)
+#define DAT_1_AUTOCMD_MASK		W1_MASK(39, 32)
+/*	DAT_0_I2C_DEVICE		W0_BIT_(31) */
+#define DAT_0_DEV_NACK_RETRY_CNT	W0_MASK(30, 29)
+#define DAT_0_RING_ID			W0_MASK(28, 26)
+#define DAT_0_DYNADDR_PARITY		W0_BIT_(23)
+#define DAT_0_DYNAMIC_ADDRESS		W0_MASK(22, 16)
+#define DAT_0_TS			W0_BIT_(15)
+#define DAT_0_MR_REJECT			W0_BIT_(14)
+/*	DAT_0_SIR_REJECT		W0_BIT_(13) */
+/*	DAT_0_IBI_PAYLOAD		W0_BIT_(12) */
+#define DAT_0_STATIC_ADDRESS		W0_MASK(6, 0)
 
-// #define dat_w0_read(i)		readl(hci->DAT_regs + (i) * 8)
-// #define dat_w1_read(i)		readl(hci->DAT_regs + (i) * 8 + 4)
-// #define dat_w0_write(i, v)	writel(v, hci->DAT_regs + (i) * 8)
-// #define dat_w1_write(i, v)	writel(v, hci->DAT_regs + (i) * 8 + 4)
+#define dat_w0_read(i)		readl(hci->DAT_regs + (i) * 8)
+#define dat_w1_read(i)		readl(hci->DAT_regs + (i) * 8 + 4)
+#define dat_w0_write(i, v)	writel(v, hci->DAT_regs + (i) * 8)
+#define dat_w1_write(i, v)	writel(v, hci->DAT_regs + (i) * 8 + 4)
 
-// static inline bool dynaddr_parity(unsigned int addr)
-// {
-// 	addr |= 1 << 7;
-// 	addr += addr >> 4;
-// 	addr += addr >> 2;
-// 	addr += addr >> 1;
-// 	return (addr & 1);
-// }
+static inline bool dynaddr_parity(unsigned int addr)
+{
+	addr |= 1 << 7;
+	addr += addr >> 4;
+	addr += addr >> 2;
+	addr += addr >> 1;
+	return (addr & 1);
+}
 
-// static int hci_dat_v1_init(struct i3c_hci *hci)
-// {
-// 	unsigned int dat_idx;
+static int hci_dat_v1_init(struct i3c_hci *hci)
+{
+	unsigned int dat_idx;
 
-// 	if (!hci->DAT_regs) {
-// 		dev_err(&hci->master.dev,
-// 			"only DAT in register space is supported at the moment\n");
-// 		return -EOPNOTSUPP;
-// 	}
-// 	if (hci->DAT_entry_size != 8) {
-// 		dev_err(&hci->master.dev,
-// 			"only 8-bytes DAT entries are supported at the moment\n");
-// 		return -EOPNOTSUPP;
-// 	}
+	if (!hci->DAT_regs) {
+		dev_err(&hci->master.dev,
+			"only DAT in register space is supported at the moment\n");
+		return -EOPNOTSUPP;
+	}
+	if (hci->DAT_entry_size != 8) {
+		dev_err(&hci->master.dev,
+			"only 8-bytes DAT entries are supported at the moment\n");
+		return -EOPNOTSUPP;
+	}
 
-// 	/* use a bitmap for faster free slot search */
-// 	hci->DAT_data = bitmap_zalloc(hci->DAT_entries, GFP_KERNEL);
-// 	if (!hci->DAT_data)
-// 		return -ENOMEM;
+	/* use a bitmap for faster free slot search */
+	//hci->DAT_data = bitmap_zalloc(hci->DAT_entries, GFP_KERNEL);
+    hci->DAT_data = malloc(hci->DAT_entries/8);
+	if (!hci->DAT_data)
+		return -ENOMEM;
 
-// 	/* clear them */
-// 	for (dat_idx = 0; dat_idx < hci->DAT_entries; dat_idx++) {
-// 		dat_w0_write(dat_idx, 0);
-// 		dat_w1_write(dat_idx, 0);
-// 	}
+	/* clear them */
+	for (dat_idx = 0; dat_idx < hci->DAT_entries; dat_idx++) {
+		dat_w0_write(dat_idx, 0);
+		dat_w1_write(dat_idx, 0);
+	}
 
-// 	return 0;
-// }
+	return 0;
+}
 
 // static void hci_dat_v1_cleanup(struct i3c_hci *hci)
 // {
@@ -169,14 +174,14 @@
 // 	return -ENODEV;
 // }
 
-// const struct hci_dat_ops mipi_i3c_hci_dat_v1 = {
-// 	.init			= hci_dat_v1_init,
-// 	.cleanup		= hci_dat_v1_cleanup,
-// 	.alloc_entry		= hci_dat_v1_alloc_entry,
-// 	.free_entry		= hci_dat_v1_free_entry,
-// 	.set_dynamic_addr	= hci_dat_v1_set_dynamic_addr,
-// 	.set_static_addr	= hci_dat_v1_set_static_addr,
-// 	.set_flags		= hci_dat_v1_set_flags,
-// 	.clear_flags		= hci_dat_v1_clear_flags,
-// 	.get_index		= hci_dat_v1_get_index,
-// };
+const struct hci_dat_ops mipi_i3c_hci_dat_v1 = {
+	.init			= hci_dat_v1_init,
+	// .cleanup		= hci_dat_v1_cleanup,
+	// .alloc_entry		= hci_dat_v1_alloc_entry,
+	// .free_entry		= hci_dat_v1_free_entry,
+	// .set_dynamic_addr	= hci_dat_v1_set_dynamic_addr,
+	// .set_static_addr	= hci_dat_v1_set_static_addr,
+	// .set_flags		= hci_dat_v1_set_flags,
+	// .clear_flags		= hci_dat_v1_clear_flags,
+	// .get_index		= hci_dat_v1_get_index,
+};

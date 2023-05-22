@@ -12,12 +12,15 @@
 #include <linux/bitfield.h>
 #include <linux/i3c/master.h>
 
+#include <linux/errno.h>
+
 #include "hci.h"
 #include "cmd.h"
 #include "dat.h"
 #include "dct.h"
 
 #include <linux/bug.h>
+#include <linux/compiler_attributes.h>
 
 /*
  * Address Assignment Command
@@ -148,79 +151,79 @@ static enum hci_cmd_mode get_i3c_mode(struct i3c_hci *hci)
 // 	return MODE_I2C_Fm;
 // }
 
-// static void fill_data_bytes(struct hci_xfer *xfer, u8 *data,
-// 			    unsigned int data_len)
-// {
-// 	xfer->cmd_desc[1] = 0;
-// 	switch (data_len) {
-// 	case 4:
-// 		xfer->cmd_desc[1] |= CMD_I1_DATA_BYTE_4(data[3]);
-// 		fallthrough;
-// 	case 3:
-// 		xfer->cmd_desc[1] |= CMD_I1_DATA_BYTE_3(data[2]);
-// 		fallthrough;
-// 	case 2:
-// 		xfer->cmd_desc[1] |= CMD_I1_DATA_BYTE_2(data[1]);
-// 		fallthrough;
-// 	case 1:
-// 		xfer->cmd_desc[1] |= CMD_I1_DATA_BYTE_1(data[0]);
-// 		fallthrough;
-// 	case 0:
-// 		break;
-// 	}
-// 	/* we consumed all the data with the cmd descriptor */
-// 	xfer->data = NULL;
-// }
+static void fill_data_bytes(struct hci_xfer *xfer, u8 *data,
+			    unsigned int data_len)
+{
+	xfer->cmd_desc[1] = 0;
+	switch (data_len) {
+	case 4:
+		xfer->cmd_desc[1] |= CMD_I1_DATA_BYTE_4(data[3]);
+		fallthrough;
+	case 3:
+		xfer->cmd_desc[1] |= CMD_I1_DATA_BYTE_3(data[2]);
+		fallthrough;
+	case 2:
+		xfer->cmd_desc[1] |= CMD_I1_DATA_BYTE_2(data[1]);
+		fallthrough;
+	case 1:
+		xfer->cmd_desc[1] |= CMD_I1_DATA_BYTE_1(data[0]);
+		fallthrough;
+	case 0:
+		break;
+	}
+	/* we consumed all the data with the cmd descriptor */
+	xfer->data = NULL;
+}
 
-// static int hci_cmd_v1_prep_ccc(struct i3c_hci *hci,
-// 			       struct hci_xfer *xfer,
-// 			       u8 ccc_addr, u8 ccc_cmd, bool raw)
-// {
-// 	unsigned int dat_idx = 0;
-// 	enum hci_cmd_mode mode = get_i3c_mode(hci);
-// 	u8 *data = xfer->data;
-// 	unsigned int data_len = xfer->data_len;
-// 	bool rnw = xfer->rnw;
-// 	int ret;
+static int hci_cmd_v1_prep_ccc(struct i3c_hci *hci,
+			       struct hci_xfer *xfer,
+			       u8 ccc_addr, u8 ccc_cmd, bool raw)
+{
+	unsigned int dat_idx = 0;
+	enum hci_cmd_mode mode = get_i3c_mode(hci);
+	u8 *data = xfer->data;
+	unsigned int data_len = xfer->data_len;
+	bool rnw = xfer->rnw;
+	int ret;
 
-// 	/* this should never happen */
-// 	if (WARN_ON(raw))
-// 		return -EINVAL;
+	/* this should never happen */
+	if (WARN_ON(raw))
+		return -EINVAL;
 
-// 	if (ccc_addr != I3C_BROADCAST_ADDR) {
-// 		ret = mipi_i3c_hci_dat_v1.get_index(hci, ccc_addr);
-// 		if (ret < 0)
-// 			return ret;
-// 		dat_idx = ret;
-// 	}
+	if (ccc_addr != I3C_BROADCAST_ADDR) {
+		ret = mipi_i3c_hci_dat_v1.get_index(hci, ccc_addr);
+		if (ret < 0)
+			return ret;
+		dat_idx = ret;
+	}
 
-// 	xfer->cmd_tid = hci_get_tid();
+	xfer->cmd_tid = hci_get_tid();
 
-// 	if (!rnw && data_len <= 4) {
-// 		/* we use an Immediate Data Transfer Command */
-// 		xfer->cmd_desc[0] =
-// 			CMD_0_ATTR_I |
-// 			CMD_I0_TID(xfer->cmd_tid) |
-// 			CMD_I0_CMD(ccc_cmd) | CMD_I0_CP |
-// 			CMD_I0_DEV_INDEX(dat_idx) |
-// 			CMD_I0_DTT(data_len) |
-// 			CMD_I0_MODE(mode);
-// 		fill_data_bytes(xfer, data, data_len);
-// 	} else {
-// 		/* we use a Regular Data Transfer Command */
-// 		xfer->cmd_desc[0] =
-// 			CMD_0_ATTR_R |
-// 			CMD_R0_TID(xfer->cmd_tid) |
-// 			CMD_R0_CMD(ccc_cmd) | CMD_R0_CP |
-// 			CMD_R0_DEV_INDEX(dat_idx) |
-// 			CMD_R0_MODE(mode) |
-// 			(rnw ? CMD_R0_RNW : 0);
-// 		xfer->cmd_desc[1] =
-// 			CMD_R1_DATA_LENGTH(data_len);
-// 	}
+	if (!rnw && data_len <= 4) {
+		/* we use an Immediate Data Transfer Command */
+		xfer->cmd_desc[0] =
+			CMD_0_ATTR_I |
+			CMD_I0_TID(xfer->cmd_tid) |
+			CMD_I0_CMD(ccc_cmd) | CMD_I0_CP |
+			CMD_I0_DEV_INDEX(dat_idx) |
+			CMD_I0_DTT(data_len) |
+			CMD_I0_MODE(mode);
+		fill_data_bytes(xfer, data, data_len);
+	} else {
+		/* we use a Regular Data Transfer Command */
+		xfer->cmd_desc[0] =
+			CMD_0_ATTR_R |
+			CMD_R0_TID(xfer->cmd_tid) |
+			CMD_R0_CMD(ccc_cmd) | CMD_R0_CP |
+			CMD_R0_DEV_INDEX(dat_idx) |
+			CMD_R0_MODE(mode) |
+			(rnw ? CMD_R0_RNW : 0);
+		xfer->cmd_desc[1] =
+			CMD_R1_DATA_LENGTH(data_len);
+	}
 
-// 	return 0;
-// }
+	return 0;
+}
 
 // static void hci_cmd_v1_prep_i3c_xfer(struct i3c_hci *hci,
 // 				     struct i3c_dev_desc *dev,
@@ -374,7 +377,7 @@ static enum hci_cmd_mode get_i3c_mode(struct i3c_hci *hci)
 // }
 
 const struct hci_cmd_ops mipi_i3c_hci_cmd_v1 = {
-	// .prep_ccc		= hci_cmd_v1_prep_ccc,
+	.prep_ccc		= hci_cmd_v1_prep_ccc,
 	// .prep_i3c_xfer		= hci_cmd_v1_prep_i3c_xfer,
 	// .prep_i2c_xfer		= hci_cmd_v1_prep_i2c_xfer,
 	// .perform_daa		= hci_cmd_v1_daa,
